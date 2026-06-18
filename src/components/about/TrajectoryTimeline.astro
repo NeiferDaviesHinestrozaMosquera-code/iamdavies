@@ -1,0 +1,101 @@
+---
+import type { Trajectory } from '../../lib/supabase';
+
+interface Props {
+  trajectory: Trajectory[];
+}
+
+const { trajectory = [] } = Astro.props;
+
+const pulseClasses = ['cyan-pulse', 'purple-pulse', 'pink-pulse'];
+const delayClasses = ['delay-1', 'delay-2', 'delay-3', 'delay-4'];
+---
+
+<div class="trajectory-timeline">
+  {trajectory && trajectory.length > 0 ? (
+    trajectory.map((item, index) => {
+      const pulseClass = pulseClasses[index % pulseClasses.length];
+      const delayClass = delayClasses[index % delayClasses.length];
+      return (
+        <div class={`trajectory-item glass reveal ${delayClass}`}>
+          <div class={`item-dot ${pulseClass}`}></div>
+          <span class="item-date">{item.date_range}</span>
+          <h3>{item.role}</h3>
+          <span class="item-company">{item.company}</span>
+          <p>{item.description}</p>
+        </div>
+      );
+    })
+  ) : (
+    <div class="trajectory-item glass reveal">
+      <p>No se cargó información de trayectoria laboral.</p>
+    </div>
+  )}
+</div>
+
+<style>
+  .trajectory-timeline {
+    position: relative;
+    border-left: 2px solid var(--border-color);
+    padding-left: 2.5rem;
+    margin-left: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+  }
+
+  .trajectory-item {
+    position: relative;
+    padding: 2rem;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+  }
+
+  .trajectory-item:hover {
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .item-dot {
+    position: absolute;
+    left: -3.05rem;
+    top: 2.5rem;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid var(--bg-primary);
+  }
+
+  .cyan-pulse { background: var(--accent-cyan); box-shadow: 0 0 10px var(--accent-cyan); }
+  .purple-pulse { background: var(--accent-purple); box-shadow: 0 0 10px var(--accent-purple); }
+  .pink-pulse { background: var(--accent-pink); box-shadow: 0 0 10px var(--accent-pink); }
+
+  .item-date {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--accent-cyan);
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+
+  .trajectory-item h3 {
+    font-size: 1.2rem;
+    margin-bottom: 0.25rem;
+    color: #fff;
+  }
+
+  .item-company {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    display: block;
+  }
+
+  .trajectory-item p {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin: 0;
+  }
+</style>

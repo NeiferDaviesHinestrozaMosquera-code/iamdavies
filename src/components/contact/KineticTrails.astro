@@ -1,0 +1,56 @@
+---
+/**
+ * KineticTrails.astro
+ * Renders animated light-streak lines that drift across the viewport.
+ * Purely decorative – no client-side JS required.
+ */
+---
+
+<div class="streaks-container">
+  <div class="light-streak streak-1"></div>
+  <div class="light-streak streak-2"></div>
+  <div class="light-streak streak-3"></div>
+</div>
+
+<style>
+  .streaks-container {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+    overflow: hidden;
+  }
+
+  .light-streak {
+    position: absolute;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(6, 182, 212, 0.4), var(--accent-purple), rgba(236, 72, 153, 0.4), transparent);
+    width: 250px;
+    opacity: 0.3;
+  }
+
+  .streak-1 {
+    top: 25%;
+    left: -300px;
+    animation: drift-streak 9s linear infinite;
+  }
+
+  .streak-2 {
+    top: 55%;
+    left: -300px;
+    animation: drift-streak 14s linear infinite 3s;
+  }
+
+  .streak-3 {
+    top: 75%;
+    left: -300px;
+    animation: drift-streak 11s linear infinite 6s;
+  }
+
+  @keyframes drift-streak {
+    0%   { transform: translateX(0) skewX(-45deg); opacity: 0; }
+    10%  { opacity: 0.4; }
+    90%  { opacity: 0.4; }
+    100% { transform: translateX(calc(100vw + 600px)) skewX(-45deg); opacity: 0; }
+  }
+</style>

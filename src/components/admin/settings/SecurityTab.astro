@@ -1,0 +1,34 @@
+---
+/**
+ * SecurityTab.astro
+ * Settings tab for password change.
+ */
+---
+
+<div id="tab-security" class="tab-pane">
+  <div class="settings-grid">
+    <div class="settings-col">
+      <div class="settings-card glass">
+        <div class="card-header">
+          <h2>Cambiar Contraseña</h2>
+          <p>Actualiza tus credenciales de acceso al dashboard.</p>
+        </div>
+        <form class="settings-form" id="password-form" novalidate>
+          <div class="input-group">
+            <label for="s-new-pwd">Nueva Contraseña</label>
+            <input type="password" id="s-new-pwd" placeholder="••••••••" autocomplete="new-password" required />
+          </div>
+          <div class="input-group">
+            <label for="s-confirm-pwd">Confirmar Contraseña</label>
+            <input type="password" id="s-confirm-pwd" placeholder="••••••••" autocomplete="new-password" required />
+          </div>
+          <div class="pwd-error" id="pwd-error" style="display:none;"></div>
+          <button type="submit" class="save-btn" id="pwd-save-btn">
+            <span id="pwd-btn-text">Actualizar Contraseña</span>
+            <div id="pwd-spinner" style="display:none;"><div class="spinner"></div></div>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

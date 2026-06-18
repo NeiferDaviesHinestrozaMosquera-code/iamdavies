@@ -1,0 +1,71 @@
+---
+/**
+ * ProfileTab.astro
+ * Settings tab for about-me biography, role, and profile photo upload.
+ */
+import type { SiteSettings } from '../../../../lib/supabase';
+
+interface Props {
+  settings: SiteSettings | null;
+}
+
+const { settings } = Astro.props;
+---
+
+<div id="tab-about" class="tab-pane">
+  <div class="settings-grid">
+    <div class="settings-col">
+      <div class="settings-card glass">
+        <div class="card-header">
+          <h2>Perfil Principal</h2>
+          <p>Modifica tu biografía, rol y presentación principal.</p>
+        </div>
+        <form class="settings-form" id="about-form" novalidate>
+          <div class="input-group">
+            <label for="s-role">Rol Principal (CV)</label>
+            <input type="text" id="s-role" value={settings?.role_title || ''} placeholder="Senior Frontend Engineer" />
+          </div>
+          <div class="input-group">
+            <label for="s-bio">Biografía Corta (CV & Inicio)</label>
+            <textarea id="s-bio" rows="3" placeholder="Biografía rápida para tarjetas...">{settings?.bio || ''}</textarea>
+          </div>
+          <div class="input-group">
+            <label for="s-about-text">Biografía Completa (Sobre Mí)</label>
+            <textarea id="s-about-text" rows="5" placeholder="Texto que aparece en la sección Sobre Mí...">{settings?.about_text || ''}</textarea>
+          </div>
+          <button type="submit" class="save-btn" id="about-save-btn">
+            <span id="about-btn-text">Guardar Biografía</span>
+            <div id="about-spinner" style="display:none;"><div class="spinner"></div></div>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="settings-col">
+      <div class="settings-card glass">
+        <div class="card-header">
+          <h2>Foto de Perfil</h2>
+          <p>Sube tu foto para la sección de perfil y Acerca De.</p>
+        </div>
+        <div class="profile-pic-container">
+          <div class="image-upload-area" id="about-image-area">
+            <div class="upload-placeholder" id="about-upload-placeholder" style={settings?.about_image_url ? "display:none;" : ""}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              <span>Haz clic para subir foto</span>
+              <small>WebP, PNG, JPG</small>
+            </div>
+            <img id="about-image-preview" src={settings?.about_image_url || ''} alt="Profile Preview" style={settings?.about_image_url ? "display:block; width:100%; height:100%; object-fit:cover;" : "display:none; width:100%; height:100%; object-fit:cover;"} />
+            <input type="file" id="f-about-image" accept="image/*" style="display:none;" />
+          </div>
+          <div id="about-image-info" style={settings?.about_image_url ? "display:block; margin-top: 1rem; width:100%;" : "display:none; margin-top: 1rem; width:100%;"}>
+            <button type="button" class="action-btn danger w-full" id="remove-about-image">Quitar foto de perfil</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

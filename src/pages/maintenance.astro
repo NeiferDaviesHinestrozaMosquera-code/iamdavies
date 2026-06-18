@@ -1,0 +1,176 @@
+---
+import '../styles/global.css';
+
+// We fetch settings to verify availability
+import { supabase } from '../lib/supabase';
+const { data: settings } = await supabase
+  .from('site_settings')
+  .select('maintenance_mode')
+  .single();
+
+// If maintenance mode is disabled, redirect to home
+if (!settings?.maintenance_mode) {
+  return Astro.redirect('/');
+}
+---
+
+<!doctype html>
+<html lang="es">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<title>En Mantenimiento</title>
+		<meta name="description" content="Sitio en mantenimiento. Volveremos pronto con novedades." />
+	</head>
+	<body>
+		<div class="starfield"></div>
+		<div class="nebula-glow nebula-purple"></div>
+		<div class="nebula-glow nebula-cyan"></div>
+
+		<section class="maintenance-section">
+			<div class="maintenance-card glass reveal-scale">
+				<div class="brand-cube-stage">
+					<div class="brand-cube">
+						<div class="side front"></div>
+						<div class="side back"></div>
+						<div class="side left"></div>
+						<div class="side right"></div>
+						<div class="side top"></div>
+						<div class="side bottom"></div>
+					</div>
+				</div>
+
+				<h1 class="title">Modo Mantenimiento</h1>
+				<p class="description">Estamos actualizando el portafolio para traerte una experiencia aún más inmersiva. Volveremos muy pronto.</p>
+				
+				<div class="status-indicator">
+					<span class="status-dot"></span>
+					<span>Optimizando sistemas</span>
+				</div>
+			</div>
+		</section>
+	</body>
+</html>
+
+<style>
+	body {
+		background: var(--bg-primary);
+		color: #fff;
+		margin: 0;
+		font-family: var(--font-sans);
+		overflow: hidden;
+	}
+
+	.maintenance-section {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		min-height: 100vh;
+		padding: 2rem;
+		position: relative;
+		z-index: 10;
+	}
+
+	.maintenance-card {
+		max-width: 480px;
+		width: 100%;
+		padding: 4rem 3rem;
+		border-radius: 28px;
+		text-align: center;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 2rem;
+		border: 1px solid rgba(255, 255, 255, 0.05);
+		box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.6);
+	}
+
+	.brand-cube-stage {
+		perspective: 800px;
+		width: 100px;
+		height: 100px;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		margin-bottom: 1rem;
+	}
+
+	.brand-cube {
+		width: 44px;
+		height: 44px;
+		position: relative;
+		transform-style: preserve-3d;
+		animation: cube-spin 8s linear infinite;
+	}
+
+	@keyframes cube-spin {
+		0% { transform: rotateX(0deg) rotateY(0deg); }
+		100% { transform: rotateX(360deg) rotateY(360deg); }
+	}
+
+	.side {
+		position: absolute;
+		width: 44px;
+		height: 44px;
+		background: rgba(139, 92, 246, 0.15);
+		border: 1.5px solid var(--accent-purple);
+		box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
+	}
+
+	.front  { transform: rotateY(0deg) translateZ(22px); }
+	.back   { transform: rotateY(180deg) translateZ(22px); }
+	.left   { transform: rotateY(-90deg) translateZ(22px); border-color: var(--accent-cyan); background: rgba(6, 182, 212, 0.15); }
+	.right  { transform: rotateY(90deg) translateZ(22px); border-color: var(--accent-cyan); background: rgba(6, 182, 212, 0.15); }
+	.top    { transform: rotateX(90deg) translateZ(22px); border-color: var(--accent-pink); background: rgba(236, 72, 153, 0.15); }
+	.bottom { transform: rotateX(-90deg) translateZ(22px); border-color: var(--accent-pink); background: rgba(236, 72, 153, 0.15); }
+
+	.title {
+		font-family: var(--font-mono);
+		font-size: 1.8rem;
+		font-weight: 700;
+		margin: 0;
+		letter-spacing: 0.05em;
+		background: linear-gradient(135deg, #fff 40%, var(--accent-cyan) 100%);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+	}
+
+	.description {
+		font-size: 0.95rem;
+		color: var(--text-secondary);
+		line-height: 1.6;
+		margin: 0;
+	}
+
+	.status-indicator {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.8rem;
+		color: var(--text-muted);
+		background: rgba(255, 255, 255, 0.02);
+		border: 1px solid rgba(255, 255, 255, 0.05);
+		padding: 0.4rem 1rem;
+		border-radius: 100px;
+		font-family: var(--font-mono);
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+	}
+
+	.status-dot {
+		width: 6px;
+		height: 6px;
+		background-color: var(--accent-cyan);
+		border-radius: 50%;
+		display: inline-block;
+		box-shadow: 0 0 10px var(--accent-cyan);
+		animation: pulse-active 1.5s infinite;
+	}
+
+	@keyframes pulse-active {
+		0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.7); }
+		70% { transform: scale(1.1); box-shadow: 0 0 0 8px rgba(6, 182, 212, 0); }
+		100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(6, 182, 212, 0); }
+	}
+</style>

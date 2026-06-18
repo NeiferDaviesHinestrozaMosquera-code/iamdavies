@@ -1,0 +1,100 @@
+---
+interface Props {
+  categories: string[];
+}
+
+const { categories } = Astro.props;
+---
+
+<div class="filters-container glass reveal delay-2">
+  <button class="filter-btn active" data-filter="all">Todos</button>
+  {categories.map(cat => (
+    <button class="filter-btn" data-filter={cat.toLowerCase().replace(/\s+/g, '-')}>{cat}</button>
+  ))}
+</div>
+
+<style>
+  .filters-container {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1.25rem;
+    margin-bottom: 3.5rem;
+    width: max-content;
+    max-width: 100%;
+    overflow-x: auto;
+    border-radius: 100px;
+  }
+
+  .filter-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    font-weight: 500;
+    font-size: 0.9rem;
+    padding: 0.5rem 1.25rem;
+    border-radius: 100px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+
+  .filter-btn:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .filter-btn.active {
+    color: #fff;
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(139, 92, 246, 0.2));
+    border: 1px solid rgba(6, 182, 212, 0.3);
+  }
+
+  @media (max-width: 600px) {
+    .filters-container {
+      width: 100%;
+      border-radius: 16px;
+    }
+  }
+</style>
+
+<script>
+  function setupFilters() {
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    const cards = document.querySelectorAll('.project-card');
+    
+    filterButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation(); // Avoid triggering card click
+        // Toggle active button class
+        filterButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        const filterVal = btn.getAttribute('data-filter');
+        
+        cards.forEach(card => {
+          const cardEl = card as HTMLElement;
+          const category = cardEl.getAttribute('data-category');
+          
+          if (filterVal === 'all' || category === filterVal) {
+            cardEl.style.display = 'flex';
+            setTimeout(() => {
+              cardEl.style.opacity = '1';
+              cardEl.style.transform = 'scale(1)';
+            }, 50);
+          } else {
+            cardEl.style.opacity = '0';
+            cardEl.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+              cardEl.style.display = 'none';
+            }, 200);
+          }
+        });
+      });
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', setupFilters);
+  document.addEventListener('astro:page-load', setupFilters);
+</script>

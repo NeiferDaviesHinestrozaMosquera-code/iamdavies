@@ -1,0 +1,94 @@
+---
+/**
+ * GeneralTab.astro
+ * Settings tab for site identity (logo, hero title) and feature toggles.
+ */
+import type { SiteSettings } from '../../../../lib/supabase';
+
+interface Props {
+  settings: SiteSettings | null;
+}
+
+const { settings } = Astro.props;
+---
+
+<div id="tab-general" class="tab-pane active">
+  <div class="settings-grid">
+    <div class="settings-col">
+      <div class="settings-card glass">
+        <div class="card-header">
+          <h2>Identidad e Inicio</h2>
+          <p>Personaliza el logo textual y el mensaje principal de la web.</p>
+        </div>
+        <form class="settings-form" id="general-form" novalidate>
+          <div class="input-group">
+            <label for="s-logo-text">Texto del Logotipo (Navbar & Footer)</label>
+            <input type="text" id="s-logo-text" value={settings?.logo_text || ''} placeholder="Ej: iamdavies." required />
+          </div>
+          <div class="input-group">
+            <label for="s-hero-title">Título del Hero (Inicio)</label>
+            <input type="text" id="s-hero-title" value={settings?.hero_title || ''} placeholder="Ej: PORTAFOLIO CREATIVO INMERSIVO" required />
+          </div>
+          <button type="submit" class="save-btn" id="general-save-btn">
+            <span id="general-btn-text">Guardar Cambios</span>
+            <div id="general-spinner" style="display:none;"><div class="spinner"></div></div>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="settings-col">
+      <div class="settings-card glass">
+        <div class="card-header">
+          <h2>Preferencias del Sitio</h2>
+          <p>Controla las funcionalidades activas de tu portafolio.</p>
+        </div>
+        <div class="toggle-list">
+          <div class="toggle-item">
+            <div class="toggle-info">
+              <h4>Disponible para contratar</h4>
+              <p>Muestra el banner de disponibilidad en el sitio.</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="t-available" data-key="available_for_hire" checked={Boolean(settings?.available_for_hire)} />
+              <span class="slider round"></span>
+            </label>
+          </div>
+
+          <div class="toggle-item">
+            <div class="toggle-info">
+              <h4>Cursor de Neón</h4>
+              <p>Habilitar el cursor personalizado inmersivo.</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="t-cursor" data-key="neon_cursor_enabled" checked={Boolean(settings?.neon_cursor_enabled)} />
+              <span class="slider round"></span>
+            </label>
+          </div>
+
+          <div class="toggle-item">
+            <div class="toggle-info">
+              <h4>Descarga de CV Pública</h4>
+              <p>Permitir a los visitantes descargar el PDF de tu CV.</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="t-cv" data-key="cv_download_enabled" checked={Boolean(settings?.cv_download_enabled)} />
+              <span class="slider round"></span>
+            </label>
+          </div>
+
+          <div class="toggle-item border-warning">
+            <div class="toggle-info">
+              <h4>Modo Mantenimiento</h4>
+              <p>Oculta el portafolio temporalmente al público.</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="t-maintenance" data-key="maintenance_mode" checked={Boolean(settings?.maintenance_mode)} />
+              <span class="slider round red"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

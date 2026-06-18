@@ -1,0 +1,579 @@
+---
+import '../styles/global.css';
+import { ClientRouter } from 'astro:transitions';
+import { createServerSupabaseClient } from '../lib/supabase';
+
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+const currentPath = new URL(Astro.request.url).pathname;
+
+// ── No-cache headers: prevent browser from caching admin pages ─
+// This ensures pressing Back forces a real server request (middleware blocks unauthenticated access)
+Astro.response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+Astro.response.headers.set('Pragma', 'no-cache');
+Astro.response.headers.set('Expires', '0');
+
+// ── Session guard (Handled by middleware.ts) ───────────────
+const accessToken = Astro.cookies.get('sb-access-token')?.value;
+const refreshToken = Astro.cookies.get('sb-refresh-token')?.value;
+
+const supabase = await createServerSupabaseClient(accessToken, refreshToken);
+
+// Fetch unread messages count on server
+const { count: unreadCount } = await supabase
+  .from('messages')
+  .select('*', { count: 'exact', head: true })
+  .eq('is_read', false);
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title}</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <ClientRouter />
+  </head>
+  <body class="admin-body">
+
+    <div class="admin-wrapper">
+      <!-- Admin Sidebar -->
+      <aside class="admin-sidebar glass" id="admin-sidebar">
+        <div class="sidebar-header">
+          <a href="/" class="admin-logo">
+            <span class="gradient-text logo-text">iamdavies.</span>
+            <span class="admin-badge">ADMIN</span>
+          </a>
+          <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle Sidebar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <nav class="sidebar-nav">
+          <a href="/admin" class={`nav-item ${currentPath === "/admin" || currentPath === "/admin/" ? "active" : ""}`} title="Dashboard">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="7" height="9"></rect>
+              <rect x="14" y="3" width="7" height="5"></rect>
+              <rect x="14" y="12" width="7" height="9"></rect>
+              <rect x="3" y="16" width="7" height="5"></rect>
+            </svg>
+            <span class="nav-label">Dashboard</span>
+          </a>
+          <a href="/admin/projects" class={`nav-item ${currentPath.startsWith("/admin/projects") ? "active" : ""}`} title="Proyectos">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+            </svg>
+            <span class="nav-label">Proyectos</span>
+          </a>
+          <a href="/admin/blog" class={`nav-item ${currentPath.startsWith("/admin/blog") ? "active" : ""}`} title="Blog">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 20h9"></path>
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+            </svg>
+            <span class="nav-label">Blog</span>
+          </a>
+          <a href="/admin/messages" class={`nav-item ${currentPath.startsWith("/admin/messages") ? "active" : ""}`} id="messages-nav-link" title="Mensajes">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+              <polyline points="22,6 12,13 2,6"></polyline>
+            </svg>
+            <span class="nav-label">Mensajes</span>
+            <span class="badge-count" id="unread-badge" style={unreadCount && unreadCount > 0 ? "display: inline-flex;" : "display:none;"}>
+              {unreadCount && unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          </a>
+          <a href="/admin/settings" class={`nav-item ${currentPath.startsWith("/admin/settings") ? "active" : ""}`} title="Ajustes">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+            <span class="nav-label">Ajustes</span>
+          </a>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="user-info">
+            <div class="user-avatar">D</div>
+            <div class="user-details">
+              <span class="user-name">Davies</span>
+              <span class="user-role">Administrador</span>
+            </div>
+          </div>
+          <button class="logout-btn" id="logout-btn" title="Cerrar Sesión">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+          </button>
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="admin-main">
+        <button class="mobile-admin-toggle" id="mobile-sidebar-toggle" aria-label="Open Sidebar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+        <slot />
+      </main>
+    </div>
+
+  </body>
+</html>
+
+<style>
+  .admin-body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    margin: 0;
+    padding: 0;
+    font-family: var(--font-sans);
+    overflow-x: hidden;
+  }
+
+  .admin-wrapper {
+    display: flex;
+    min-height: 100vh;
+  }
+
+  .admin-sidebar {
+    width: 280px;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    border-radius: 0;
+    border: none;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    flex-direction: column;
+    padding: 2rem 1.5rem;
+    z-index: 100;
+    flex-shrink: 0;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Collapsed State */
+  .admin-sidebar.collapsed {
+    width: 80px;
+    padding: 2rem 0.75rem;
+  }
+
+  .admin-sidebar.collapsed .logo-text,
+  .admin-sidebar.collapsed .admin-badge,
+  .admin-sidebar.collapsed .nav-label,
+  .admin-sidebar.collapsed .user-details {
+    display: none;
+  }
+
+  .admin-sidebar.collapsed .badge-count {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    margin: 0;
+    padding: 0.1rem 0.3rem;
+    font-size: 0.65rem;
+  }
+
+  .admin-sidebar.collapsed .nav-item {
+    justify-content: center;
+    padding: 1rem 0;
+    position: relative;
+  }
+
+  .admin-sidebar.collapsed .sidebar-footer {
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .admin-sidebar.collapsed .user-info {
+    justify-content: center;
+    margin-bottom: 1rem;
+  }
+
+  /* --- Mobile Responsive Sidebar --- */
+  @media (max-width: 768px) {
+    .admin-sidebar {
+      position: fixed;
+      left: 0;
+      top: 0;
+      transform: translateX(0);
+      width: 280px !important;
+      padding: 2rem 1.5rem !important;
+    }
+    
+    /* On mobile, 'collapsed' means completely hidden off-screen */
+    .admin-sidebar.collapsed {
+      transform: translateX(-100%);
+    }
+
+    /* Override any collapsed styles that hide text on mobile when it's open */
+    .admin-sidebar:not(.collapsed) .logo-text,
+    .admin-sidebar:not(.collapsed) .admin-badge,
+    .admin-sidebar:not(.collapsed) .nav-label,
+    .admin-sidebar:not(.collapsed) .user-details {
+      display: block;
+    }
+    
+    .admin-sidebar:not(.collapsed) .sidebar-footer {
+      flex-direction: row;
+      justify-content: space-between;
+    }
+    
+    .admin-sidebar:not(.collapsed) .user-info {
+      margin-bottom: 0;
+      justify-content: flex-start;
+    }
+    
+    .admin-sidebar:not(.collapsed) .nav-item {
+      justify-content: flex-start;
+      padding: 1rem;
+    }
+    
+    .admin-sidebar:not(.collapsed) .badge-count {
+      position: static;
+      margin-left: auto;
+    }
+
+    /* Show a toggle button floating on main content when sidebar is hidden */
+    .mobile-admin-toggle {
+      display: flex !important;
+    }
+  }
+
+  .sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 3rem;
+    padding-left: 0.5rem;
+  }
+  
+  .sidebar-toggle {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    border-radius: 6px;
+    transition: all 0.2s;
+  }
+  
+  .sidebar-toggle:hover {
+    color: #fff;
+    background: rgba(255,255,255,0.05);
+  }
+  
+  .sidebar-toggle svg { width: 20px; height: 20px; }
+  
+  .admin-sidebar.collapsed .sidebar-header {
+    justify-content: center;
+    padding: 0;
+  }
+
+  .admin-sidebar.collapsed .sidebar-toggle {
+    margin: 0 auto;
+  }
+
+  .admin-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-decoration: none;
+    font-size: 1.5rem;
+    font-weight: 800;
+  }
+
+  .admin-badge {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+    background: rgba(236, 72, 153, 0.2);
+    color: var(--accent-pink);
+    border: 1px solid rgba(236, 72, 153, 0.4);
+    border-radius: 4px;
+    font-family: var(--font-mono);
+  }
+
+  .sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex: 1;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-weight: 500;
+    border-radius: 12px;
+    transition: all var(--transition-fast);
+  }
+
+  .nav-item svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+
+  .nav-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+  }
+
+  .nav-item.active {
+    background: rgba(6, 182, 212, 0.1);
+    color: var(--accent-cyan);
+    border-left: 3px solid var(--accent-cyan);
+  }
+
+  .badge-count {
+    margin-left: auto;
+    background: var(--accent-pink);
+    color: #fff;
+    font-size: 0.75rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 100px;
+    font-weight: 700;
+  }
+
+  .sidebar-footer {
+    margin-top: auto;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .user-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .user-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .user-details {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .user-name {
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+
+  .user-role {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+  }
+
+  .logout-btn {
+    background: rgba(236, 72, 153, 0.05);
+    border: 1px solid rgba(236, 72, 153, 0.15);
+    color: var(--text-muted);
+    border-radius: 8px;
+    padding: 0.6rem;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .logout-btn:hover {
+    color: var(--accent-pink);
+    background: rgba(236, 72, 153, 0.1);
+    border-color: rgba(236, 72, 153, 0.3);
+  }
+
+  .logout-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .admin-main {
+    flex: 1;
+    padding: 2.5rem 3rem;
+    min-width: 0;
+    width: 100%;
+    background:
+      radial-gradient(circle at top right, rgba(6, 182, 212, 0.05), transparent 40%),
+      radial-gradient(circle at bottom left, rgba(139, 92, 246, 0.05), transparent 40%);
+  }
+
+  .mobile-admin-toggle {
+    display: none;
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    z-index: 90;
+    background: rgba(3, 0, 20, 0.8);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    padding: 0.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  @media (max-width: 768px) {
+    .admin-main {
+      padding: 4rem 1.5rem 2rem 1.5rem;
+    }
+  }
+</style>
+
+<script>
+  import { supabase } from '../lib/supabase';
+
+  // ── Restore session from cookies into the browser Supabase client ──
+  // This is critical: the server uses cookie tokens, but the client-side
+  // Supabase instance needs the session set explicitly so RLS queries work.
+  function getTokenFromCookie(name: string): string | null {
+    const match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+    return match ? decodeURIComponent(match[1]) : null;
+  }
+
+  async function restoreClientSession() {
+    const accessToken = getTokenFromCookie('sb-access-token');
+    const refreshToken = getTokenFromCookie('sb-refresh-token');
+    if (accessToken && refreshToken) {
+      const { data: { session } } = await supabase.auth.getSession();
+      // Only restore if client doesn't already have a valid session
+      if (!session) {
+        await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+      }
+    }
+  }
+
+  // ── Client-side session guard ────────────────────────────
+  // Protects against browser back-button / bfcache restoring a cached admin page
+  function checkAuthAndRedirect() {
+    const hasCookies = document.cookie.includes('sb-access-token') && document.cookie.includes('sb-refresh-token');
+    if (!hasCookies && window.location.pathname.startsWith('/admin') && !window.location.pathname.startsWith('/admin/login')) {
+      // No session cookies found — hard redirect to login
+      window.location.replace('/admin/login');
+    }
+  }
+
+  // Fires on every View Transition page load (including initial)
+  document.addEventListener('astro:page-load', () => {
+    checkAuthAndRedirect();
+    restoreClientSession();
+  });
+
+  // Fires when browser restores a page from the bfcache (back/forward button)
+  window.addEventListener('pageshow', (event) => {
+    if (event.persisted) {
+      // Page was restored from bfcache — force a fresh server check
+      checkAuthAndRedirect();
+    }
+  });
+
+  // Init layouts script on page load (runs on initial load & after every transition)
+  document.addEventListener('astro:page-load', () => {
+    // ── Logout ──────────────────────────────────────────────
+    document.getElementById('logout-btn')?.addEventListener('click', async () => {
+      await supabase.auth.signOut();
+      // Clear cookies and prevent going back to cached admin page
+      document.cookie = 'sb-access-token=; path=/; max-age=0; SameSite=Strict';
+      document.cookie = 'sb-refresh-token=; path=/; max-age=0; SameSite=Strict';
+      // Use replace() so the admin page is NOT added to history
+      window.location.replace('/admin/login');
+    });
+
+    // ── Unread Messages Badge ────────────────────────────────
+    async function updateUnreadBadge() {
+      const badge = document.getElementById('unread-badge');
+      if (!badge) return;
+      const { count } = await supabase
+        .from('messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_read', false);
+      if (count !== null && count > 0) {
+        badge.textContent = count > 99 ? '99+' : String(count);
+        badge.style.display = 'inline-flex';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+
+    updateUnreadBadge();
+
+    // ── Sidebar Toggle Logic ─────────────────────────────────
+    const sidebar = document.getElementById('admin-sidebar');
+    const toggleBtn = document.getElementById('sidebar-toggle');
+    const mobileToggleBtn = document.getElementById('mobile-sidebar-toggle');
+    
+    // Default to collapsed on mobile initially if screen is small
+    let isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+    if (window.innerWidth <= 768) {
+      isCollapsed = true; // Always start hidden on mobile
+    }
+
+    if (sidebar) {
+      if (isCollapsed) {
+        sidebar.classList.add('collapsed');
+      } else {
+        sidebar.classList.remove('collapsed');
+      }
+    }
+
+    function toggleSidebar() {
+      if (!sidebar) return;
+      const currentlyCollapsed = sidebar.classList.contains('collapsed');
+      
+      if (currentlyCollapsed) {
+        sidebar.classList.remove('collapsed');
+        if (window.innerWidth > 768) localStorage.setItem('sidebar-collapsed', 'false');
+      } else {
+        sidebar.classList.add('collapsed');
+        if (window.innerWidth > 768) localStorage.setItem('sidebar-collapsed', 'true');
+      }
+    }
+
+    toggleBtn?.addEventListener('click', toggleSidebar);
+    mobileToggleBtn?.addEventListener('click', toggleSidebar);
+  });
+</script>

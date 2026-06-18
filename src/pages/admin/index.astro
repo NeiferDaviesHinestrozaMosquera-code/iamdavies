@@ -1,0 +1,688 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { createServerSupabaseClient } from '../../lib/supabase';
+
+// Get cookies for authorized request
+const accessToken = Astro.cookies.get('sb-access-token')?.value;
+const refreshToken = Astro.cookies.get('sb-refresh-token')?.value;
+
+const supabase = await createServerSupabaseClient(accessToken, refreshToken);
+
+// Compute date boundaries for visit stats
+const now = new Date();
+const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+// Fetch all dashboard data concurrently on the server
+const [
+  { count: totalProjects },
+  { count: publishedCount },
+  { count: unreadMessages },
+  { count: totalMessages },
+  { data: recentProjects },
+  { data: recentMessages },
+  { count: totalVisits },
+  { count: todayVisits },
+  { count: weekVisits },
+  { data: topPagesRaw }
+] = await Promise.all([
+  supabase.from('projects').select('*', { count: 'exact', head: true }),
+  supabase.from('projects').select('*', { count: 'exact', head: true }).eq('status', 'published'),
+  supabase.from('messages').select('*', { count: 'exact', head: true }).eq('is_read', false),
+  supabase.from('messages').select('*', { count: 'exact', head: true }),
+  supabase.from('projects').select('id, title, category, status, image_url, created_at').order('created_at', { ascending: false }).limit(5),
+  supabase.from('messages').select('id, name, email, subject, is_read, created_at').order('created_at', { ascending: false }).limit(5),
+  // Visit counts
+  supabase.from('page_visits').select('*', { count: 'exact', head: true }),
+  supabase.from('page_visits').select('*', { count: 'exact', head: true }).gte('created_at', todayStart),
+  supabase.from('page_visits').select('*', { count: 'exact', head: true }).gte('created_at', sevenDaysAgo),
+  // Top 5 most-visited pages
+  supabase.from('page_visits').select('page'),
+]);
+
+const draftsCount = (totalProjects ?? 0) - (publishedCount ?? 0);
+
+// Aggregate top pages from raw data
+const pageCounts: Record<string, number> = {};
+(topPagesRaw ?? []).forEach((row: { page: string }) => {
+  pageCounts[row.page] = (pageCounts[row.page] || 0) + 1;
+});
+const topPages = Object.entries(pageCounts)
+  .sort(([, a], [, b]) => b - a)
+  .slice(0, 7)
+  .map(([page, count]) => ({ page, count }));
+
+// Friendly page names map
+const pageNames: Record<string, string> = {
+  '/': 'Inicio',
+  '/about': 'Sobre Mí',
+  '/projects': 'Proyectos',
+  '/blog': 'Blog',
+  '/contact': 'Contacto',
+};
+---
+
+<AdminLayout title="Admin Dashboard">
+
+  <header class="dashboard-header">
+    <div>
+      <h1 class="dash-title">Hola, Davies 👋</h1>
+      <p class="dash-subtitle" id="dash-date">Aquí tienes el resumen de tu portafolio — {new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}.</p>
+    </div>
+    <div class="header-actions">
+      <button class="action-btn new-post-btn" id="new-project-btn" onclick="window.location.href='/admin/projects'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        Nuevo Proyecto
+      </button>
+    </div>
+  </header>
+
+  <!-- Stats Grid -->
+  <section class="stats-grid">
+    <div class="stat-card glass border-cyan">
+      <div class="stat-icon cyan-bg">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+        </svg>
+      </div>
+      <div class="stat-info">
+        <h3>Proyectos Totales</h3>
+        <p class="stat-number" id="stat-projects">{totalProjects ?? 0}</p>
+        <span class="stat-trend" id="stat-projects-sub">{publishedCount ?? 0} publicados · {draftsCount} borradores</span>
+      </div>
+    </div>
+
+    <div class="stat-card glass border-pink">
+      <div class="stat-icon pink-bg">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+        </svg>
+      </div>
+      <div class="stat-info">
+        <h3>Mensajes Nuevos</h3>
+        <p class="stat-number" id="stat-messages">{unreadMessages ?? 0}</p>
+        <span class="stat-trend {(unreadMessages ?? 0) > 0 ? 'warning' : ''}" id="stat-messages-sub">{totalMessages ?? 0} total en bandeja</span>
+      </div>
+    </div>
+
+    <div class="stat-card glass border-purple">
+      <div class="stat-icon purple-bg">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+        </svg>
+      </div>
+      <div class="stat-info">
+        <h3>Publicados</h3>
+        <p class="stat-number" id="stat-published">{publishedCount ?? 0}</p>
+        <span class="stat-trend positive" id="stat-published-sub">
+          {(publishedCount ?? 0) > 0 ? '↑ Visibles al público' : 'Sin proyectos publicados'}
+        </span>
+      </div>
+    </div>
+
+    <div class="stat-card glass border-green">
+      <div class="stat-icon green-bg">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+      </div>
+      <div class="stat-info">
+        <h3>Visitas Totales</h3>
+        <p class="stat-number">{totalVisits ?? 0}</p>
+        <span class="stat-trend positive">{todayVisits ?? 0} hoy · {weekVisits ?? 0} esta semana</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Top Visited Pages -->
+  {topPages.length > 0 && (
+    <section class="top-pages-section glass">
+      <div class="section-header">
+        <h2>Páginas Más Visitadas</h2>
+        <span class="view-all" style="cursor: default; opacity: 0.6;">Top {topPages.length}</span>
+      </div>
+      <div class="top-pages-list">
+        {topPages.map((item, idx) => {
+          const pct = topPages[0].count > 0 ? Math.round((item.count / topPages[0].count) * 100) : 0;
+          const colors = ['var(--accent-cyan)', 'var(--accent-purple)', 'var(--accent-pink)', '#10b981', '#f59e0b', '#6366f1', '#a1a1aa'];
+          const barColor = colors[idx % colors.length];
+          const label = pageNames[item.page] || item.page;
+          return (
+            <div class="top-page-row">
+              <div class="top-page-info">
+                <span class="top-page-rank">#{idx + 1}</span>
+                <span class="top-page-name">{label}</span>
+                <span class="top-page-path">{item.page}</span>
+              </div>
+              <div class="top-page-bar-wrap">
+                <div class="top-page-bar" style={`width: ${pct}%; background: ${barColor};`}></div>
+              </div>
+              <span class="top-page-count">{item.count}</span>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  )}
+
+  <div class="dashboard-content">
+    <!-- Left Column: Recent Projects Table -->
+    <div class="table-container glass">
+      <div class="section-header">
+        <h2>Últimos Proyectos</h2>
+        <a href="/admin/projects" class="view-all">Ver todos →</a>
+      </div>
+
+      {recentProjects && recentProjects.length > 0 ? (
+        <table class="admin-table" id="projects-table">
+          <thead>
+            <tr>
+              <th>Nombre del Proyecto</th>
+              <th>Categoría</th>
+              <th>Estado</th>
+              <th>Fecha</th>
+            </tr>
+          </thead>
+          <tbody id="projects-tbody">
+            {recentProjects.map(p => {
+              const initials = p.title.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
+              const date = new Date(p.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+              const statusLabels: {[k:string]:string} = { published: 'Publicado', draft: 'Borrador', archived: 'Archivado' };
+              const label = statusLabels[p.status] ?? p.status;
+              return (
+                <tr>
+                  <td>
+                    <div class="project-cell">
+                      <div class="project-thumb">
+                        {p.image_url ? <img src={p.image_url} alt={p.title} /> : initials}
+                      </div>
+                      <span>{p.title}</span>
+                    </div>
+                  </td>
+                  <td>{p.category || '—'}</td>
+                  <td><span class={`status-badge status-${p.status}`}>{label}</span></td>
+                  <td>{date}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      ) : (
+        <div id="projects-empty" class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+          </svg>
+          <p>No hay proyectos aún.</p>
+          <a href="/admin/projects" class="create-link">Crear primer proyecto →</a>
+        </div>
+      )}
+    </div>
+
+    <!-- Right Column: Recent Messages -->
+    <div class="chart-container glass">
+      <div class="section-header">
+        <h2>Mensajes Recientes</h2>
+        <a href="/admin/messages" class="view-all">Ver todos →</a>
+      </div>
+
+      {recentMessages && recentMessages.length > 0 ? (
+        <div id="messages-list">
+          {recentMessages.map(m => {
+            const initials = m.name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
+            
+            // Helper for simple time ago on server
+            const diff = Date.now() - new Date(m.created_at).getTime();
+            const mins = Math.floor(diff / 60000);
+            let timeAgo = '';
+            if (mins < 1) timeAgo = 'Ahora';
+            else if (mins < 60) timeAgo = `${mins}m`;
+            else {
+              const hours = Math.floor(mins / 60);
+              if (hours < 24) timeAgo = `${hours}h`;
+              else timeAgo = `${Math.floor(hours / 24)}d`;
+            }
+            
+            return (
+              <div class="msg-mini" onclick="window.location.href='/admin/messages'">
+                <div class="msg-mini-avatar">{initials}</div>
+                <div class="msg-mini-content">
+                  <div class="msg-mini-header">
+                    <span class="msg-mini-name">{m.name}</span>
+                    <span class="msg-mini-time">{timeAgo}</span>
+                  </div>
+                  <div class="msg-mini-subject">{m.subject}</div>
+                </div>
+                {!m.is_read && <div class="unread-dot-sm"></div>}
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div id="messages-empty" class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+          <p>No hay mensajes aún.</p>
+        </div>
+      )}
+    </div>
+  </div>
+
+</AdminLayout>
+
+<style>
+  .dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 3rem;
+  }
+
+  .dash-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin: 0 0 0.5rem 0;
+    color: #fff;
+  }
+
+  .dash-subtitle {
+    color: var(--text-secondary);
+    margin: 0;
+    font-size: 1.1rem;
+  }
+
+  .action-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: rgba(6, 182, 212, 0.15);
+    border: 1px solid rgba(6, 182, 212, 0.3);
+    color: var(--accent-cyan);
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+
+  .action-btn svg { width: 18px; height: 18px; }
+
+  .action-btn:hover {
+    background: rgba(6, 182, 212, 0.3);
+    box-shadow: 0 0 15px rgba(6, 182, 212, 0.2);
+    color: #fff;
+  }
+
+  /* Stats */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2rem;
+    margin-bottom: 3rem;
+  }
+
+  .stat-card {
+    padding: 1.5rem;
+    border-radius: 20px;
+    display: flex;
+    align-items: flex-start;
+    gap: 1.25rem;
+  }
+
+  .border-cyan { border-left: 4px solid var(--accent-cyan); }
+  .border-pink { border-left: 4px solid var(--accent-pink); }
+  .border-purple { border-left: 4px solid var(--accent-purple); }
+  .border-green { border-left: 4px solid #10b981; }
+
+  .stat-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .stat-icon svg { width: 24px; height: 24px; color: #fff; }
+  .cyan-bg { background: rgba(6, 182, 212, 0.3); }
+  .pink-bg { background: rgba(236, 72, 153, 0.3); }
+  .purple-bg { background: rgba(139, 92, 246, 0.3); }
+  .green-bg { background: rgba(16, 185, 129, 0.3); }
+
+  .stat-info h3 {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin: 0 0 0.5rem 0;
+  }
+
+  .stat-number {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #fff;
+    margin: 0 0 0.5rem 0;
+    line-height: 1;
+  }
+
+  .stat-trend { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); }
+  .positive { color: #10b981; }
+  .warning  { color: #f59e0b; }
+
+  /* Main Content */
+  .dashboard-content {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+  }
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .section-header h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #fff;
+    margin: 0;
+  }
+
+  .view-all {
+    color: var(--accent-cyan);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: opacity 0.2s;
+  }
+
+  .view-all:hover { opacity: 0.7; }
+
+  /* Table */
+  .table-container, .chart-container {
+    padding: 2rem;
+    border-radius: 20px;
+  }
+
+  .admin-table { width: 100%; border-collapse: collapse; }
+
+  .admin-table th {
+    text-align: left;
+    padding-bottom: 1rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .admin-table td {
+    padding: 1.25rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+  }
+
+  .project-cell {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: #fff;
+    font-weight: 600;
+  }
+
+  .project-thumb {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+
+  .project-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+  .status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 100px;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .status-published { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+  .status-draft { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); }
+  .status-archived { background: rgba(161, 161, 170, 0.15); color: #a1a1aa; border: 1px solid rgba(161, 161, 170, 0.3); }
+
+  /* Messages mini-list */
+  .msg-mini {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    transition: background 0.2s;
+    border-radius: 8px;
+  }
+
+  .msg-mini:hover { background: rgba(255,255,255,0.02); }
+
+  .msg-mini-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .msg-mini-content { flex: 1; min-width: 0; }
+
+  .msg-mini-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.25rem;
+  }
+
+  .msg-mini-name {
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+
+  .msg-mini-time { color: var(--text-muted); font-size: 0.75rem; }
+  .msg-mini-subject { color: var(--text-secondary); font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .unread-dot-sm {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent-cyan);
+    box-shadow: 0 0 6px var(--accent-cyan);
+    flex-shrink: 0;
+    margin-top: 0.35rem;
+  }
+
+  /* Loading / Empty */
+  .loading-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 3rem 0;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  .loading-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255,255,255,0.1);
+    border-top-color: var(--accent-cyan);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 3rem 0;
+    color: var(--text-muted);
+    text-align: center;
+  }
+
+  .empty-state svg { width: 48px; height: 48px; opacity: 0.3; }
+  .empty-state p { margin: 0; font-size: 0.95rem; }
+  .create-link { color: var(--accent-cyan); text-decoration: none; font-size: 0.9rem; }
+
+  /* Responsive media queries */
+  /* ── Top Pages Section ── */
+  .top-pages-section {
+    padding: 2rem;
+    border-radius: 20px;
+    margin-bottom: 3rem;
+  }
+
+  .top-pages-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .top-page-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  }
+
+  .top-page-row:last-child { border-bottom: none; }
+
+  .top-page-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 200px;
+    flex-shrink: 0;
+  }
+
+  .top-page-rank {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    width: 28px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .top-page-name {
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.95rem;
+    white-space: nowrap;
+  }
+
+  .top-page-path {
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+  }
+
+  .top-page-bar-wrap {
+    flex: 1;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 100px;
+    overflow: hidden;
+  }
+
+  .top-page-bar {
+    height: 100%;
+    border-radius: 100px;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 8px rgba(6, 182, 212, 0.3);
+  }
+
+  .top-page-count {
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--accent-cyan);
+    min-width: 48px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 950px) {
+    .stats-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.25rem;
+    }
+    .dashboard-content {
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+    .top-page-info {
+      min-width: 140px;
+    }
+    .top-page-path {
+      display: none;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .stats-grid {
+      grid-template-columns: 1fr;
+    }
+    .dashboard-header {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .dash-title {
+      font-size: 2rem;
+    }
+    .new-post-btn {
+      width: 100%;
+      justify-content: center;
+    }
+    .table-container, .chart-container {
+      padding: 1.5rem;
+    }
+    .admin-table {
+      display: block;
+      overflow-x: auto;
+    }
+    .top-pages-section {
+      padding: 1.5rem;
+    }
+  }
+</style>
+
+<script>
+  // All initial stats, projects and messages are loaded Server-Side (SSR) for absolute performance.
+</script>

@@ -1,0 +1,96 @@
+---
+import type { SocialNetwork } from '../lib/supabase';
+
+interface Props {
+  logoText: string;
+  socials: SocialNetwork[];
+}
+
+const { logoText, socials } = Astro.props;
+
+const currentYear = new Date().getFullYear();
+---
+<footer class="footer">
+  <div class="container footer-content">
+    <div class="footer-left">
+      <a href="/" class="logo-link"><span class="gradient-text">{logoText}</span></a>
+      <p class="copy">&copy; {currentYear} Todos los derechos reservados.</p>
+    </div>
+    
+    <div class="footer-links">
+      {socials && socials.length > 0 ? (
+        socials.map((social) => (
+          <a href={social.url} target="_blank" rel="noopener noreferrer" class="social-link">
+            {social.name}
+          </a>
+        ))
+      ) : (
+        <>
+          <a href="https://github.com" target="_blank" rel="noopener noreferrer" class="social-link">GitHub</a>
+          <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" class="social-link">LinkedIn</a>
+        </>
+      )}
+    </div>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    border-top: 1px solid var(--border-color);
+    padding: 3rem 0;
+    margin-top: 8rem;
+    background: rgba(3, 0, 20, 0.5);
+    backdrop-filter: blur(10px);
+  }
+
+  .footer-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 2rem;
+    width: 100%;
+  }
+
+  .footer-left {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .logo-link {
+    text-decoration: none;
+    font-family: var(--font-mono);
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+
+  .copy {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+
+  .footer-links {
+    display: flex;
+    gap: 1.5rem;
+  }
+
+  .social-link {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color var(--transition-fast);
+  }
+
+  .social-link:hover {
+    color: var(--accent-cyan);
+  }
+
+  @media (max-width: 600px) {
+    .footer-content {
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+  }
+</style>

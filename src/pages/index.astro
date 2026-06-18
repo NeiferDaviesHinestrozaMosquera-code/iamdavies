@@ -1,11 +1,391 @@
 ---
-import Welcome from '../components/Welcome.astro';
 import Layout from '../layouts/Layout.astro';
+import { supabase } from '../lib/supabase';
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+// Fetch site settings from Supabase
+const { data: settings } = await supabase
+  .from('site_settings')
+  .select('bio, role_title')
+  .single();
+
+const { data: socials = [] } = await supabase
+  .from('social_networks')
+  .select('url')
+  .order('order_index', { ascending: true });
+
+const bio = settings?.bio || 'Explorando Profundidad y Dimensión';
+const roleTitle = settings?.role_title || 'Portafolio Creativo Inmersivo';
+
+const sameAsUrls = (socials || []).map(s => s.url).filter(Boolean);
+const siteUrl = Astro.site || Astro.url.origin;
+
+const schema = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "Dev Davies",
+  "jobTitle": roleTitle,
+  "description": bio,
+  "url": siteUrl.toString(),
+  "sameAs": sameAsUrls
+};
 ---
 
-<Layout>
-	<Welcome />
+<Layout title="Portafolio Creativo Inmersivo" description={bio} schema={schema}>
+  <div class="starfield"></div>
+  <div class="nebula-glow nebula-purple"></div>
+  <div class="nebula-glow nebula-cyan"></div>
+
+  <!-- Hero Container -->
+  <section class="hero-immersive">
+    <!-- Left Button -->
+    <div class="btn-wrap left-btn reveal-left delay-1">
+      <a href="/projects" class="hero-btn glow-effect">
+        <span>VER PROYECTOS</span>
+      </a>
+    </div>
+
+    <!-- Center 3D Crystal Visual -->
+    <div class="crystal-stage reveal-scale">
+      <div class="crystal-wrapper">
+        <div class="crystal-container">
+          <!-- 3D Octahedron Crystal Faces -->
+          <!-- Top 4 triangles -->
+          <div class="crystal-face face-top-1">
+            <svg viewBox="0 0 100 86.6" class="face-svg">
+              <polygon points="50,0 0,86.6 100,86.6" class="triangle-poly"></polygon>
+            </svg>
+          </div>
+          <div class="crystal-face face-top-2">
+            <svg viewBox="0 0 100 86.6" class="face-svg">
+              <polygon points="50,0 0,86.6 100,86.6" class="triangle-poly"></polygon>
+            </svg>
+          </div>
+          <div class="crystal-face face-top-3">
+            <svg viewBox="0 0 100 86.6" class="face-svg">
+              <polygon points="50,0 0,86.6 100,86.6" class="triangle-poly"></polygon>
+            </svg>
+          </div>
+          <div class="crystal-face face-top-4">
+            <svg viewBox="0 0 100 86.6" class="face-svg">
+              <polygon points="50,0 0,86.6 100,86.6" class="triangle-poly"></polygon>
+            </svg>
+          </div>
+          <!-- Bottom 4 triangles -->
+          <div class="crystal-face face-bottom-1">
+            <svg viewBox="0 0 100 86.6" class="face-svg">
+              <polygon points="50,0 0,86.6 100,86.6" class="triangle-poly"></polygon>
+            </svg>
+          </div>
+          <div class="crystal-face face-bottom-2">
+            <svg viewBox="0 0 100 86.6" class="face-svg">
+              <polygon points="50,0 0,86.6 100,86.6" class="triangle-poly"></polygon>
+            </svg>
+          </div>
+          <div class="crystal-face face-bottom-3">
+            <svg viewBox="0 0 100 86.6" class="face-svg">
+              <polygon points="50,0 0,86.6 100,86.6" class="triangle-poly"></polygon>
+            </svg>
+          </div>
+          <div class="crystal-face face-bottom-4">
+            <svg viewBox="0 0 100 86.6" class="face-svg">
+              <polygon points="50,0 0,86.6 100,86.6" class="triangle-poly"></polygon>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <!-- Glow aura behind the crystal -->
+      <div class="crystal-shadow"></div>
+    </div>
+
+    <!-- Right Button -->
+    <div class="btn-wrap right-btn reveal-right delay-2">
+      <a href="/about" class="hero-btn glow-effect">
+        <span>SOBRE MÍ</span>
+      </a>
+    </div>
+
+    <!-- Title and Subtitle at Bottom -->
+    <div class="hero-text-content reveal delay-3">
+      <h1 class="hero-title uppercase">{roleTitle}</h1>
+      <p class="hero-subtitle">{bio}</p>
+    </div>
+  </section>
+
+  <!-- Global SVG definitions for gradients used inside the crystal faces -->
+  <svg style="width:0; height:0; position:absolute;" width="0" height="0">
+    <defs>
+      <linearGradient id="face-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="rgba(6, 182, 212, 0.12)"></stop>
+        <stop offset="50%" stop-color="rgba(139, 92, 246, 0.08)"></stop>
+        <stop offset="100%" stop-color="rgba(236, 72, 153, 0.12)"></stop>
+      </linearGradient>
+      <linearGradient id="stroke-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="rgba(6, 182, 212, 0.7)"></stop>
+        <stop offset="50%" stop-color="rgba(139, 92, 246, 0.5)"></stop>
+        <stop offset="100%" stop-color="rgba(236, 72, 153, 0.7)"></stop>
+      </linearGradient>
+    </defs>
+  </svg>
 </Layout>
+
+<style>
+  .hero-immersive {
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr;
+    grid-template-rows: 1fr auto;
+    align-items: center;
+    justify-items: center;
+    min-height: calc(100vh - 12rem);
+    padding: 2rem 1.5rem;
+    position: relative;
+    overflow: hidden;
+    max-width: 1300px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .btn-wrap {
+    z-index: 10;
+  }
+
+  /* Pill-shaped glowing buttons */
+  .hero-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.85rem 2.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    color: #fff;
+    text-decoration: none;
+    background: rgba(3, 0, 20, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 100px;
+    transition: all var(--transition-normal);
+    cursor: pointer;
+    backdrop-filter: blur(12px);
+  }
+
+  .hero-btn:hover {
+    border-color: var(--accent-cyan);
+    transform: scale(1.05);
+    box-shadow: 0 0 25px rgba(6, 182, 212, 0.3);
+  }
+
+  /* 3D Crystal Stage */
+  .crystal-stage {
+    position: relative;
+    width: 100%;
+    height: 400px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 5;
+  }
+
+  .crystal-wrapper {
+    perspective: 1200px;
+    width: 250px;
+    height: 250px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transform-style: preserve-3d;
+    animation: crystal-spin 35s linear infinite;
+  }
+
+  @keyframes crystal-spin {
+    0% { transform: rotateY(0deg); }
+    100% { transform: rotateY(360deg); }
+  }
+
+  .crystal-container {
+    width: 200px;
+    height: 200px;
+    position: relative;
+    transform-style: preserve-3d;
+    /* Custom properties set dynamically by JS, default values below */
+    --rx: 0deg;
+    --ry: 0deg;
+    transform: rotateX(calc(20deg + var(--rx))) rotateY(var(--ry));
+    transition: transform 0.15s cubic-bezier(0.25, 0.8, 0.25, 1);
+  }
+
+  /* 3D Octahedron Face positioning */
+  /* Top pyramid height ~70.7px, base side 141.4px, angle 35.26deg */
+  .crystal-face {
+    position: absolute;
+    width: 200px;
+    height: 173.2px;
+    left: 0;
+    top: 13.4px; /* Centering vertically inside the 200x200 container */
+    transform-origin: 50% 50%;
+    backface-visibility: hidden;
+  }
+
+  .face-svg {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.2));
+  }
+
+  .triangle-poly {
+    fill: url(#face-gradient);
+    stroke: url(#stroke-gradient);
+    stroke-width: 1.5px;
+    stroke-linejoin: round;
+  }
+
+  /* Octahedron face coordinates */
+  /* Top 4 faces */
+  .face-top-1 {
+    transform: rotateY(0deg) translateZ(57.7px) rotateX(35.26deg);
+  }
+  .face-top-2 {
+    transform: rotateY(90deg) translateZ(57.7px) rotateX(35.26deg);
+  }
+  .face-top-3 {
+    transform: rotateY(180deg) translateZ(57.7px) rotateX(35.26deg);
+  }
+  .face-top-4 {
+    transform: rotateY(270deg) translateZ(57.7px) rotateX(35.26deg);
+  }
+
+  /* Bottom 4 faces: rotated upside down (180deg on Z) and tilted down */
+  .face-bottom-1 {
+    transform: rotateY(0deg) translateZ(57.7px) rotateX(-35.26deg) rotateZ(180deg);
+    transform-origin: 50% 50%;
+  }
+  .face-bottom-2 {
+    transform: rotateY(90deg) translateZ(57.7px) rotateX(-35.26deg) rotateZ(180deg);
+    transform-origin: 50% 50%;
+  }
+  .face-bottom-3 {
+    transform: rotateY(180deg) translateZ(57.7px) rotateX(-35.26deg) rotateZ(180deg);
+    transform-origin: 50% 50%;
+  }
+  .face-bottom-4 {
+    transform: rotateY(270deg) translateZ(57.7px) rotateX(-35.26deg) rotateZ(180deg);
+    transform-origin: 50% 50%;
+  }
+
+  .crystal-shadow {
+    position: absolute;
+    width: 250px;
+    height: 250px;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.25) 0%, transparent 70%);
+    filter: blur(20px);
+    z-index: -1;
+    pointer-events: none;
+    animation: float-slow 8s ease-in-out infinite;
+  }
+
+  /* Title layout at bottom */
+  .hero-text-content {
+    grid-column: 1 / -1;
+    text-align: center;
+    margin-top: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    z-index: 10;
+  }
+
+  .hero-title {
+    font-family: var(--font-mono);
+    font-size: clamp(1.8rem, 4.5vw, 3.2rem);
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    background: linear-gradient(135deg, #fff 30%, #a1a1aa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin: 0;
+  }
+
+  .hero-subtitle {
+    font-size: clamp(0.95rem, 1.8vw, 1.25rem);
+    color: var(--text-secondary);
+    letter-spacing: 0.15em;
+    font-weight: 400;
+    margin: 0;
+  }
+
+  /* Responsive styling */
+  @media (max-width: 800px) {
+    .hero-immersive {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto auto;
+      gap: 2rem;
+      min-height: auto;
+      padding-top: 4rem;
+    }
+
+    .left-btn {
+      grid-row: 2;
+    }
+    
+    .right-btn {
+      grid-row: 3;
+    }
+
+    .crystal-stage {
+      height: 300px;
+    }
+
+    .crystal-wrapper {
+      width: 180px;
+      height: 180px;
+    }
+
+    .crystal-container {
+      width: 140px;
+      height: 140px;
+    }
+
+    .crystal-face {
+      width: 140px;
+      height: 121.2px;
+      top: 9.4px;
+    }
+
+    /* Recalculate Z-translation for smaller scale octahedron on mobile */
+    /* side=140px, translateZ = side * 0.2885 = 40.4px */
+    .face-top-1 { transform: rotateY(0deg) translateZ(40.4px) rotateX(35.26deg); }
+    .face-top-2 { transform: rotateY(90deg) translateZ(40.4px) rotateX(35.26deg); }
+    .face-top-3 { transform: rotateY(180deg) translateZ(40.4px) rotateX(35.26deg); }
+    .face-top-4 { transform: rotateY(270deg) translateZ(40.4px) rotateX(35.26deg); }
+    .face-bottom-1 { transform: rotateY(0deg) translateZ(40.4px) rotateX(-35.26deg) rotateZ(180deg); }
+    .face-bottom-2 { transform: rotateY(90deg) translateZ(40.4px) rotateX(-35.26deg) rotateZ(180deg); }
+    .face-bottom-3 { transform: rotateY(180deg) translateZ(40.4px) rotateX(-35.26deg) rotateZ(180deg); }
+    .face-bottom-4 { transform: rotateY(270deg) translateZ(40.4px) rotateX(-35.26deg) rotateZ(180deg); }
+  }
+</style>
+
+<script>
+  // Mouse tilt tracking for the 3D crystal
+  function setupCrystalTilt() {
+    const container = document.querySelector('.crystal-container') as HTMLElement;
+
+    document.addEventListener('mousemove', (e) => {
+      if (!container) return;
+      
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      
+      // Get normal coords (-1 to 1) from the center of the viewport
+      const dx = (e.clientX - width / 2) / (width / 2);
+      const dy = (e.clientY - height / 2) / (height / 2);
+      
+      // Calculate rotation adjustments (max tilt of 30deg)
+      const rx = -dy * 30; // pitch
+      const ry = dx * 30;  // yaw
+      
+      container.style.setProperty('--rx', `${rx}deg`);
+      container.style.setProperty('--ry', `${ry}deg`);
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', setupCrystalTilt);
+  document.addEventListener('astro:page-load', setupCrystalTilt);
+</script>

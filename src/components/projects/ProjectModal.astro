@@ -1,0 +1,351 @@
+---
+---
+
+<div class="project-modal-backdrop" id="project-modal">
+  <div class="project-modal-container glass">
+    <button class="modal-close-btn" id="project-modal-close" aria-label="Cerrar modal">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+    
+    <div class="modal-layout">
+      <!-- Visual Column -->
+      <div class="modal-visual" id="modal-visual-container">
+        <!-- Dynamically populated by JS -->
+      </div>
+      
+      <!-- Info Column -->
+      <div class="modal-info">
+        <h2 id="modal-title" class="modal-title"></h2>
+        <div class="modal-tags" id="modal-tags"></div>
+        <p id="modal-description" class="modal-description"></p>
+        
+        <div class="modal-links" id="modal-links">
+          <!-- Dynamically populated links -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Modal Styles */
+  .project-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(10px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .project-modal-backdrop.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .project-modal-container {
+    width: 100%;
+    max-width: 1100px;
+    max-height: 90vh;
+    border-radius: 24px;
+    position: relative;
+    overflow-y: auto;
+    transform: translateY(30px) scale(0.95);
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .project-modal-backdrop.open .project-modal-container {
+    transform: translateY(0) scale(1);
+  }
+
+  .modal-close-btn {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    background: rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #fff;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.2s;
+  }
+
+  .modal-close-btn:hover {
+    background: var(--accent-pink);
+    transform: rotate(90deg);
+  }
+
+  .modal-close-btn svg { width: 20px; height: 20px; }
+
+  .modal-layout {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    min-height: 500px;
+  }
+
+  .modal-visual {
+    background: #000;
+    position: relative;
+    border-right: 1px solid rgba(255,255,255,0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-visual :global(img), .modal-visual :global(.carousel-container) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .modal-info {
+    padding: 3.5rem 3rem;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%);
+  }
+
+  .modal-title {
+    font-size: 2.2rem;
+    font-family: var(--font-mono);
+    margin: 0 0 1rem 0;
+    color: #fff;
+  }
+
+  .modal-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .modal-tags :global(span) {
+    font-size: 0.8rem;
+    background: rgba(6, 182, 212, 0.1);
+    color: var(--accent-cyan);
+    border: 1px solid rgba(6, 182, 212, 0.3);
+    padding: 0.3rem 0.8rem;
+    border-radius: 100px;
+  }
+
+  .modal-description {
+    color: var(--text-secondary);
+    font-size: 1.05rem;
+    line-height: 1.7;
+    margin-bottom: 3rem;
+    flex-grow: 1;
+    white-space: pre-wrap;
+  }
+
+  .modal-links {
+    display: flex;
+    gap: 1rem;
+    margin-top: auto;
+  }
+
+  .modal-links :global(.modal-btn) {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.8rem 1.5rem;
+    border-radius: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+  }
+
+  .modal-links :global(.modal-btn.primary) {
+    background: var(--accent-cyan);
+    color: var(--bg-primary);
+  }
+
+  .modal-links :global(.modal-btn.primary:hover) {
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.4);
+    transform: translateY(-2px);
+  }
+
+  .modal-links :global(.modal-btn.secondary) {
+    background: rgba(255,255,255,0.05);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .modal-links :global(.modal-btn.secondary:hover) {
+    background: rgba(255,255,255,0.1);
+    transform: translateY(-2px);
+  }
+
+  @media (max-width: 900px) {
+    .modal-layout {
+      grid-template-columns: 1fr;
+    }
+    
+    .modal-visual {
+      aspect-ratio: 16/9;
+      border-right: none;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    
+    .modal-info {
+      padding: 2rem;
+    }
+  }
+</style>
+
+<script>
+  // Helper to re-initialize carousel inside modal dynamically
+  function setupCarousels(root: HTMLElement) {
+    const carousels = root.querySelectorAll('[data-carousel]');
+    
+    carousels.forEach(carousel => {
+      const track = carousel.querySelector('.carousel-track') as HTMLElement;
+      const slides = carousel.querySelectorAll('.carousel-slide');
+      const nextBtn = carousel.querySelector('.next-btn');
+      const prevBtn = carousel.querySelector('.prev-btn');
+      const dots = carousel.querySelectorAll('.carousel-dot');
+      
+      if (!track || slides.length === 0) return;
+      
+      let currentIndex = 0;
+      let autoPlayInterval: number;
+      
+      const updateCarousel = () => {
+        track.style.transform = `translateX(-${currentIndex * 100}%)`;
+        dots.forEach((dot, idx) => {
+          dot.classList.toggle('active', idx === currentIndex);
+        });
+      };
+      
+      const nextSlide = () => {
+        currentIndex = (currentIndex + 1) % slides.length;
+        updateCarousel();
+      };
+      
+      const prevSlide = () => {
+        currentIndex = (currentIndex - 1 + slides.length) % slides.length;
+        updateCarousel();
+      };
+
+      const startAutoPlay = () => {
+        stopAutoPlay();
+        autoPlayInterval = window.setInterval(nextSlide, 4000);
+      };
+
+      const stopAutoPlay = () => {
+        if (autoPlayInterval) clearInterval(autoPlayInterval);
+      };
+      
+      nextBtn?.addEventListener('click', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        nextSlide(); startAutoPlay();
+      });
+      
+      prevBtn?.addEventListener('click', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        prevSlide(); startAutoPlay();
+      });
+      
+      dots.forEach((dot, idx) => {
+        dot.addEventListener('click', (e) => {
+          e.preventDefault(); e.stopPropagation();
+          currentIndex = idx;
+          updateCarousel(); startAutoPlay();
+        });
+      });
+
+      carousel.addEventListener('mouseenter', stopAutoPlay);
+      carousel.addEventListener('mouseleave', startAutoPlay);
+
+      startAutoPlay();
+    });
+  }
+
+  function setupProjectModal() {
+    const cards = document.querySelectorAll('.project-card');
+    const modalBackdrop = document.getElementById('project-modal');
+    const modalCloseBtn = document.getElementById('project-modal-close');
+    
+    if (!modalBackdrop) return;
+    
+    const mVisual = document.getElementById('modal-visual-container')!;
+    const mTitle = document.getElementById('modal-title')!;
+    const mDesc = document.getElementById('modal-description')!;
+    const mTags = document.getElementById('modal-tags')!;
+    const mLinks = document.getElementById('modal-links')!;
+
+    const closeModal = () => {
+      modalBackdrop.classList.remove('open');
+      document.body.style.overflow = '';
+      setTimeout(() => { mVisual.innerHTML = ''; }, 300);
+    };
+
+    cards.forEach(card => {
+      card.addEventListener('click', () => {
+        const title = card.querySelector('h3')?.textContent || '';
+        const desc = card.querySelector('.project-meta p')?.textContent || '';
+        const tags = Array.from(card.querySelectorAll('.project-tags span')).map(s => s.textContent);
+        const visualHtml = card.querySelector('.project-visual')?.innerHTML || '';
+
+        // Populate modal
+        mTitle.textContent = title;
+        mDesc.textContent = desc;
+        mTags.innerHTML = tags.map(t => `<span>${t}</span>`).join('');
+        
+        // Find links
+        const liveBtn = card.querySelector('.proj-link-item:first-child') as HTMLAnchorElement;
+        const ghBtn = card.querySelector('.proj-link-item:last-child') as HTMLAnchorElement;
+        
+        let newLinksHtml = '';
+        // In our Supabase schema projects can have live_url and github_url
+        // Let's retrieve these directly from dataset if possible, or parsing child text
+        const isLive = liveBtn && liveBtn.textContent?.trim().toLowerCase().includes('demo');
+        const isGithub = ghBtn && ghBtn.textContent?.trim().toLowerCase().includes('github');
+
+        // Let's query by SVG or href since they are a elements
+        const liveLink = card.querySelector('a[href]:not([href*="github"])') as HTMLAnchorElement;
+        const ghLink = card.querySelector('a[href*="github"]') as HTMLAnchorElement;
+
+        if (liveLink) {
+          newLinksHtml += `<a href="${liveLink.href}" target="_blank" rel="noopener noreferrer" class="modal-btn primary">Ver Proyecto</a>`;
+        }
+        if (ghLink) {
+          newLinksHtml += `<a href="${ghLink.href}" target="_blank" rel="noopener noreferrer" class="modal-btn secondary">Código Fuente</a>`;
+        }
+        mLinks.innerHTML = newLinksHtml;
+        mVisual.innerHTML = visualHtml;
+
+        // Initialize carousels inside modal if needed
+        setupCarousels(mVisual);
+
+        // Open modal
+        modalBackdrop.classList.add('open');
+        document.body.style.overflow = 'hidden';
+      });
+    });
+
+    modalCloseBtn?.addEventListener('click', closeModal);
+    modalBackdrop.addEventListener('click', (e) => {
+      if (e.target === modalBackdrop) closeModal();
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', setupProjectModal);
+  document.addEventListener('astro:page-load', setupProjectModal);
+</script>

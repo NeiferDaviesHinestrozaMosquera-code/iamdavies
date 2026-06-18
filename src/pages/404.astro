@@ -1,0 +1,394 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="404 — Página No Encontrada" description="La página que buscas no existe o no tienes permisos para acceder.">
+  <div class="starfield"></div>
+  <div class="nebula-glow nebula-purple"></div>
+  <div class="nebula-glow nebula-cyan"></div>
+
+  <section class="error-section">
+    <!-- Animated Portal Ring -->
+    <div class="portal-container reveal-scale">
+      <div class="portal-ring"></div>
+      <div class="portal-ring ring-2"></div>
+      <div class="portal-ring ring-3"></div>
+      <div class="portal-core">
+        <span class="error-code" aria-hidden="true" data-text="404">404</span>
+      </div>
+      <!-- Floating Particles around the portal -->
+      <div class="particle p1"></div>
+      <div class="particle p2"></div>
+      <div class="particle p3"></div>
+      <div class="particle p4"></div>
+      <div class="particle p5"></div>
+      <div class="particle p6"></div>
+    </div>
+
+    <!-- Message -->
+    <div class="error-message reveal delay-2">
+      <h1 class="error-title">Perdido en el espacio</h1>
+      <p class="error-description">
+        La página que buscas no existe, fue movida o no tienes los permisos necesarios para acceder a ella.
+      </p>
+    </div>
+
+    <!-- CTAs -->
+    <div class="error-actions reveal delay-3">
+      <a href="/" class="action-btn primary-btn glow-effect">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </svg>
+        Volver al Inicio
+      </a>
+      <a href="/projects" class="action-btn secondary-btn glow-effect">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+          <polyline points="2 17 12 22 22 17"></polyline>
+          <polyline points="2 12 12 17 22 12"></polyline>
+        </svg>
+        Ver Proyectos
+      </a>
+    </div>
+
+    <!-- Breadcrumb hint -->
+    <p class="error-hint reveal delay-4">
+      Si crees que esto es un error, <a href="/contact">contáctame</a>.
+    </p>
+  </section>
+</Layout>
+
+<style>
+  .error-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    min-height: calc(100vh - 16rem);
+    padding: 2rem 1.5rem;
+    position: relative;
+    z-index: 5;
+  }
+
+  /* ─── Portal Animation ─── */
+  .portal-container {
+    position: relative;
+    width: 260px;
+    height: 260px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 3rem;
+  }
+
+  .portal-ring {
+    position: absolute;
+    inset: 0;
+    border: 2px solid rgba(6, 182, 212, 0.3);
+    border-radius: 50%;
+    animation: portal-spin 12s linear infinite;
+  }
+
+  .portal-ring::before {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: 50%;
+    width: 8px;
+    height: 8px;
+    background: var(--accent-cyan);
+    border-radius: 50%;
+    transform: translateX(-50%);
+    box-shadow: 0 0 12px var(--accent-cyan), 0 0 30px var(--accent-cyan);
+  }
+
+  .ring-2 {
+    inset: 20px;
+    border-color: rgba(139, 92, 246, 0.25);
+    animation: portal-spin 18s linear infinite reverse;
+  }
+
+  .ring-2::before {
+    background: var(--accent-purple);
+    box-shadow: 0 0 12px var(--accent-purple), 0 0 30px var(--accent-purple);
+  }
+
+  .ring-3 {
+    inset: 45px;
+    border-color: rgba(236, 72, 153, 0.2);
+    animation: portal-spin 25s linear infinite;
+  }
+
+  .ring-3::before {
+    background: var(--accent-pink);
+    box-shadow: 0 0 12px var(--accent-pink), 0 0 30px var(--accent-pink);
+    width: 6px;
+    height: 6px;
+  }
+
+  @keyframes portal-spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+
+  .portal-core {
+    position: relative;
+    z-index: 2;
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.12) 0%, rgba(3, 0, 20, 0.9) 70%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow:
+      0 0 40px rgba(139, 92, 246, 0.15),
+      inset 0 0 30px rgba(6, 182, 212, 0.08);
+  }
+
+  /* ─── Glitch 404 Text ─── */
+  .error-code {
+    font-family: var(--font-mono);
+    font-size: 3.5rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-purple) 50%, var(--accent-pink) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    position: relative;
+    animation: glitch-subtle 4s ease-in-out infinite;
+  }
+
+  .error-code::before,
+  .error-code::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple), var(--accent-pink));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .error-code::before {
+    animation: glitch-before 4s ease-in-out infinite;
+    clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+  }
+
+  .error-code::after {
+    animation: glitch-after 4s ease-in-out infinite;
+    clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
+  }
+
+  @keyframes glitch-subtle {
+    0%, 90%, 100% { transform: translate(0); }
+    92% { transform: translate(-2px, 1px); }
+    94% { transform: translate(2px, -1px); }
+    96% { transform: translate(-1px, -1px); }
+    98% { transform: translate(1px, 1px); }
+  }
+
+  @keyframes glitch-before {
+    0%, 90%, 100% { transform: translate(0); }
+    92% { transform: translate(3px, -1px); }
+    94% { transform: translate(-2px, 2px); }
+    96% { transform: translate(1px, -2px); }
+  }
+
+  @keyframes glitch-after {
+    0%, 90%, 100% { transform: translate(0); }
+    93% { transform: translate(-3px, 1px); }
+    95% { transform: translate(2px, -1px); }
+    97% { transform: translate(-1px, 2px); }
+  }
+
+  /* ─── Floating Particles ─── */
+  .particle {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    opacity: 0.6;
+  }
+
+  .p1 {
+    width: 4px; height: 4px;
+    background: var(--accent-cyan);
+    box-shadow: 0 0 8px var(--accent-cyan);
+    top: 15%; left: 10%;
+    animation: float-particle 6s ease-in-out infinite;
+  }
+  .p2 {
+    width: 6px; height: 6px;
+    background: var(--accent-purple);
+    box-shadow: 0 0 10px var(--accent-purple);
+    top: 25%; right: 8%;
+    animation: float-particle 8s ease-in-out infinite reverse;
+  }
+  .p3 {
+    width: 3px; height: 3px;
+    background: var(--accent-pink);
+    box-shadow: 0 0 6px var(--accent-pink);
+    bottom: 20%; left: 15%;
+    animation: float-particle 7s ease-in-out infinite 1s;
+  }
+  .p4 {
+    width: 5px; height: 5px;
+    background: var(--accent-cyan);
+    box-shadow: 0 0 8px var(--accent-cyan);
+    bottom: 10%; right: 20%;
+    animation: float-particle 9s ease-in-out infinite 0.5s;
+  }
+  .p5 {
+    width: 3px; height: 3px;
+    background: var(--accent-purple);
+    box-shadow: 0 0 6px var(--accent-purple);
+    top: 50%; left: 5%;
+    animation: float-particle 5s ease-in-out infinite 2s;
+  }
+  .p6 {
+    width: 4px; height: 4px;
+    background: var(--accent-pink);
+    box-shadow: 0 0 8px var(--accent-pink);
+    top: 40%; right: 5%;
+    animation: float-particle 7s ease-in-out infinite 1.5s;
+  }
+
+  @keyframes float-particle {
+    0%, 100% { transform: translateY(0) translateX(0); opacity: 0.4; }
+    25%      { transform: translateY(-15px) translateX(8px); opacity: 0.8; }
+    50%      { transform: translateY(-5px) translateX(-6px); opacity: 0.5; }
+    75%      { transform: translateY(-20px) translateX(4px); opacity: 0.9; }
+  }
+
+  /* ─── Text Content ─── */
+  .error-message {
+    max-width: 480px;
+    margin-bottom: 2.5rem;
+  }
+
+  .error-title {
+    font-family: var(--font-mono);
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    font-weight: 800;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, #fff 40%, #a1a1aa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .error-description {
+    font-size: 1.05rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin: 0;
+  }
+
+  /* ─── Action Buttons ─── */
+  .error-actions {
+    display: flex;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 3rem;
+  }
+
+  .action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.85rem 1.8rem;
+    border-radius: 100px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-decoration: none;
+    letter-spacing: 0.03em;
+    transition: all var(--transition-normal);
+    cursor: pointer;
+  }
+
+  .action-btn svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+
+  .primary-btn {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    color: #fff;
+    border: none;
+    box-shadow: 0 8px 25px -8px rgba(6, 182, 212, 0.4);
+  }
+
+  .primary-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px -5px rgba(6, 182, 212, 0.5),
+                0 0 20px -2px rgba(139, 92, 246, 0.3);
+  }
+
+  .secondary-btn {
+    background: rgba(255, 255, 255, 0.04);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(8px);
+  }
+
+  .secondary-btn:hover {
+    border-color: var(--accent-cyan);
+    background: rgba(6, 182, 212, 0.08);
+    transform: translateY(-3px);
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.15);
+  }
+
+  /* ─── Hint Link ─── */
+  .error-hint {
+    font-size: 0.88rem;
+    color: var(--text-muted);
+  }
+
+  .error-hint a {
+    color: var(--accent-cyan);
+    text-decoration: none;
+    border-bottom: 1px solid rgba(6, 182, 212, 0.3);
+    transition: border-color var(--transition-fast), color var(--transition-fast);
+  }
+
+  .error-hint a:hover {
+    color: #fff;
+    border-color: var(--accent-cyan);
+  }
+
+  /* ─── Responsive ─── */
+  @media (max-width: 600px) {
+    .portal-container {
+      width: 200px;
+      height: 200px;
+      margin-bottom: 2rem;
+    }
+
+    .portal-core {
+      width: 110px;
+      height: 110px;
+    }
+
+    .error-code {
+      font-size: 2.8rem;
+    }
+
+    .error-actions {
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .action-btn {
+      width: 100%;
+      max-width: 280px;
+      justify-content: center;
+    }
+  }
+</style>

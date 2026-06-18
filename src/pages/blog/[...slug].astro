@@ -1,0 +1,214 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { supabase } from '../../lib/supabase';
+import { marked } from 'marked';
+
+const { slug } = Astro.params;
+
+if (!slug) {
+  return Astro.redirect('/blog');
+}
+
+// Fetch the post from Supabase
+const { data: post, error } = await supabase
+  .from('blog_posts')
+  .select('*')
+  .eq('slug', slug)
+  .eq('status', 'published')
+  .single();
+
+if (error || !post) {
+  return Astro.redirect('/blog');
+}
+
+// Configure marked for security and consistency
+marked.setOptions({
+  gfm: true,        // GitHub Flavored Markdown (tables, strikethrough, etc.)
+  breaks: true,     // Convert \n to <br>
+});
+
+const renderedContent = marked.parse(post.content || '') as string;
+
+const siteUrl = Astro.site || Astro.url.origin;
+const canonicalPostUrl = new URL(`blog/${post.slug}`, siteUrl).href;
+
+const schema = {
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": post.title,
+  "description": post.description || undefined,
+  "datePublished": post.created_at,
+  "author": {
+    "@type": "Person",
+    "name": post.author || "Dev Davies"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": canonicalPostUrl
+  }
+};
+---
+
+<Layout title={`iamdavies | ${post.title}`} description={post.description} schema={schema}>
+  <div class="starfield"></div>
+  <div class="nebula-glow nebula-purple"></div>
+
+  <article class="blog-post-container container reveal">
+    <a href="/blog" class="back-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="19" y1="12" x2="5" y2="12"></line>
+        <polyline points="12 19 5 12 12 5"></polyline>
+      </svg>
+      Volver al Blog
+    </a>
+
+    <header class="post-header">
+      <div class="post-meta">
+        <span class="post-date">
+          {new Date(post.created_at).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}
+        </span>
+        <span class="post-author">Por {post.author}</span>
+      </div>
+      
+      <h1 class="post-title">{post.title}</h1>
+      
+      <div class="post-tags">
+        {(post.tags || []).map((tag: string) => (
+          <span class="tag">{tag}</span>
+        ))}
+      </div>
+    </header>
+
+    <div class="post-content glass" set:html={renderedContent}>
+    </div>
+  </article>
+</Layout>
+
+<style>
+  .blog-post-container {
+    max-width: 800px;
+    padding-top: 2rem;
+    padding-bottom: 8rem;
+  }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.9rem;
+    margin-bottom: 3rem;
+    transition: color var(--transition-fast);
+  }
+
+  .back-link:hover {
+    color: var(--accent-cyan);
+  }
+
+  .back-link svg {
+    width: 16px;
+    height: 16px;
+    transition: transform var(--transition-fast);
+  }
+
+  .back-link:hover svg {
+    transform: translateX(-4px);
+  }
+
+  .post-header {
+    margin-bottom: 3rem;
+  }
+
+  .post-meta {
+    display: flex;
+    gap: 1.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    color: var(--accent-cyan);
+    margin-bottom: 1rem;
+  }
+
+  .post-title {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 1.5rem;
+    background: linear-gradient(135deg, #fff 40%, #a1a1aa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .post-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .tag {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.75rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 100px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+  }
+
+  /* Content Styling for Markdown */
+  .post-content {
+    padding: 3rem;
+    border-radius: 24px;
+    font-size: 1.1rem;
+    line-height: 1.8;
+    color: var(--text-secondary);
+  }
+
+  .post-content :global(h2) {
+    color: #fff;
+    font-size: 2rem;
+    margin-top: 3rem;
+    margin-bottom: 1rem;
+  }
+
+  .post-content :global(h3) {
+    color: #fff;
+    font-size: 1.5rem;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  .post-content :global(p) {
+    margin-bottom: 1.5rem;
+  }
+
+  .post-content :global(strong) {
+    color: #fff;
+    font-weight: 700;
+  }
+
+  .post-content :global(a) {
+    color: var(--accent-cyan);
+    text-decoration: none;
+    border-bottom: 1px solid rgba(6, 182, 212, 0.3);
+    transition: border-color var(--transition-fast);
+  }
+
+  .post-content :global(a:hover) {
+    border-color: var(--accent-cyan);
+  }
+
+  .post-content :global(ul), .post-content :global(ol) {
+    margin-bottom: 1.5rem;
+    padding-left: 1.5rem;
+  }
+
+  .post-content :global(li) {
+    margin-bottom: 0.5rem;
+  }
+
+  @media (max-width: 768px) {
+    .post-content {
+      padding: 2rem 1.5rem;
+    }
+  }
+</style>

@@ -1,0 +1,84 @@
+---
+/**
+ * SocialsTab.astro
+ * Settings tab for managing social network links (CRUD).
+ */
+import type { SocialNetwork } from '../../../../lib/supabase';
+
+interface Props {
+  socialsList: SocialNetwork[];
+}
+
+const { socialsList } = Astro.props;
+---
+
+<div id="tab-socials" class="tab-pane">
+  <div class="settings-grid-crud">
+    <!-- List -->
+    <div class="settings-card glass">
+      <div class="card-header">
+        <h2>Tus Redes Sociales</h2>
+        <p>Gestiona los links que aparecen en el pie de página.</p>
+      </div>
+      <div class="table-container">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Red Social</th>
+              <th>URL</th>
+              <th>Icono</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="socials-tbody">
+            {socialsList.map(s => (
+              <tr data-id={s.id}>
+                <td><strong>{s.name}</strong></td>
+                <td><a href={s.url} target="_blank" style="color:var(--accent-cyan); text-decoration:none;">{s.url}</a></td>
+                <td><code>{s.icon}</code></td>
+                <td>
+                  <button type="button" class="text-btn edit-social-btn" data-id={s.id}>Editar</button>
+                  <button type="button" class="text-btn delete delete-social-btn" data-id={s.id}>Eliminar</button>
+                </td>
+              </tr>
+            ))}
+            {socialsList.length === 0 && (
+              <tr><td colspan="4" class="text-center">No hay redes sociales configuradas.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Add/Edit Form -->
+    <div class="settings-card glass" id="social-form-card">
+      <div class="card-header">
+        <h2 id="social-form-title">Agregar Red Social</h2>
+        <p>Completa los campos para enlazar tu perfil.</p>
+      </div>
+      <form class="settings-form" id="social-form" novalidate>
+        <input type="hidden" id="social-id" />
+        <div class="input-group">
+          <label for="social-name">Nombre</label>
+          <input type="text" id="social-name" placeholder="Ej: GitHub" required />
+        </div>
+        <div class="input-group">
+          <label for="social-url">URL del Perfil</label>
+          <input type="url" id="social-url" placeholder="https://..." required />
+        </div>
+        <div class="input-group">
+          <label for="social-icon">Icono (Ej: github, linkedin, twitter)</label>
+          <input type="text" id="social-icon" placeholder="github" required />
+        </div>
+        <div class="input-group">
+          <label for="social-order">Posición / Orden</label>
+          <input type="number" id="social-order" value="1" min="1" required />
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="cancel-btn" id="social-cancel-btn" style="display:none;">Cancelar</button>
+          <button type="submit" class="save-btn" id="social-save-btn">Guardar Red</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

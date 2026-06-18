@@ -1,0 +1,385 @@
+---
+/**
+ * ContactForm.astro
+ * Self-contained contact form with:
+ *  - Floating labels with coloured focus glow (cyan / pink / purple)
+ *  - Client-side validation
+ *  - Async submission to /api/contact
+ *  - Success / reset transitions
+ */
+---
+
+<div class="contact-card-wrapper reveal delay-2">
+  <div class="contact-card glass">
+    <!-- Form Content -->
+    <form class="contact-form" id="portfolio-contact-form" novalidate>
+
+      <!-- Name Field (Cyan Focus Glow) -->
+      <div class="form-group cyan-group">
+        <input type="text" id="name" name="name" class="form-input" required placeholder=" " autocomplete="name" />
+        <label for="name" class="form-label">Nombre</label>
+        <div class="input-glow"></div>
+      </div>
+
+      <!-- Email Field (Pink Focus Glow) -->
+      <div class="form-group pink-group">
+        <input type="email" id="email" name="email" class="form-input" required placeholder=" " autocomplete="email" />
+        <label for="email" class="form-label">Correo Electrónico</label>
+        <div class="input-glow"></div>
+      </div>
+
+      <!-- Subject Field (Cyan Focus Glow) -->
+      <div class="form-group cyan-group">
+        <input type="text" id="subject" name="subject" class="form-input" placeholder=" " />
+        <label for="subject" class="form-label">Asunto (opcional)</label>
+        <div class="input-glow"></div>
+      </div>
+
+      <!-- Message Field (Purple Focus Glow) -->
+      <div class="form-group purple-group">
+        <textarea id="message" name="message" rows="5" class="form-input" required placeholder=" "></textarea>
+        <label for="message" class="form-label">Mensaje</label>
+        <div class="input-glow"></div>
+      </div>
+
+      <!-- Form error -->
+      <div class="form-error" id="form-error" style="display:none;"></div>
+
+      <button type="submit" class="submit-btn glow-effect" id="submit-contact-btn">
+        <span id="submit-contact-text">Enviar Mensaje</span>
+        <div class="btn-spinner" id="submit-contact-spinner" style="display:none;">
+          <div class="contact-spinner"></div>
+        </div>
+      </button>
+    </form>
+
+    <!-- Success Message Pane (hidden initially) -->
+    <div class="success-message" id="success-message">
+      <div class="success-icon-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="success-svg">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      </div>
+      <h3>¡Mensaje Enviado!</h3>
+      <p>Gracias por ponerte en contacto. Te responderé a la brevedad para discutir ideas o colaboraciones.</p>
+      <button class="reset-btn" id="reset-form-btn">Enviar otro mensaje</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Scoped Styles ─── -->
+<style>
+  /* Central glass form card */
+  .contact-card-wrapper {
+    width: 100%;
+    max-width: 540px;
+    perspective: 1000px;
+  }
+
+  .contact-card {
+    padding: 3rem 2.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.02);
+    box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.8),
+                inset 0 0 20px rgba(255, 255, 255, 0.02);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .contact-form {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    transition: opacity var(--transition-normal), transform var(--transition-normal);
+  }
+
+  /* ── Input fields ── */
+  .form-group {
+    position: relative;
+    width: 100%;
+  }
+
+  .form-input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 1.1rem 1.25rem;
+    color: #fff;
+    font-family: var(--font-sans);
+    font-size: 0.95rem;
+    outline: none;
+    transition: all var(--transition-normal);
+    position: relative;
+    z-index: 2;
+  }
+
+  textarea.form-input {
+    resize: none;
+  }
+
+  /* Glow overlay on focus */
+  .input-glow {
+    position: absolute;
+    inset: -1px;
+    border-radius: 12px;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0;
+    transition: all var(--transition-normal);
+    box-shadow: 0 0 15px currentColor;
+  }
+
+  /* ── Floating Labels ── */
+  .form-label {
+    position: absolute;
+    left: 1.25rem;
+    top: 1.1rem;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    pointer-events: none;
+    transition: all var(--transition-normal);
+    z-index: 3;
+    transform-origin: 0 0;
+  }
+
+  /* Focus / value behaviours */
+  .form-input:focus,
+  .form-input:not(:placeholder-shown) {
+    background: rgba(3, 0, 20, 0.6);
+  }
+
+  .form-input:focus ~ .form-label,
+  .form-input:not(:placeholder-shown) ~ .form-label {
+    transform: translateY(-1.7rem) scale(0.8);
+    color: #fff;
+    font-weight: 500;
+  }
+
+  /* ── Group colour variations ── */
+  /* Cyan */
+  .cyan-group .form-input:focus              { border-color: var(--accent-cyan); }
+  .cyan-group .form-input:focus ~ .form-label { color: var(--accent-cyan); }
+  .cyan-group .form-input:focus ~ .input-glow { opacity: 0.15; color: var(--accent-cyan); }
+
+  /* Pink */
+  .pink-group .form-input:focus              { border-color: var(--accent-pink); }
+  .pink-group .form-input:focus ~ .form-label { color: var(--accent-pink); }
+  .pink-group .form-input:focus ~ .input-glow { opacity: 0.15; color: var(--accent-pink); }
+
+  /* Purple */
+  .purple-group .form-input:focus              { border-color: var(--accent-purple); }
+  .purple-group .form-input:focus ~ .form-label { color: var(--accent-purple); }
+  .purple-group .form-input:focus ~ .input-glow { opacity: 0.15; color: var(--accent-purple); }
+
+  /* ── Submit button ── */
+  .submit-btn {
+    margin-top: 1rem;
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    color: #fff;
+    border: none;
+    border-radius: 100px;
+    padding: 1rem;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    box-shadow: 0 10px 25px -10px rgba(6, 182, 212, 0.4);
+  }
+
+  .submit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 15px 30px -5px rgba(6, 182, 212, 0.5),
+                0 0 20px -2px rgba(139, 92, 246, 0.3);
+  }
+
+  /* ── Form error ── */
+  .form-error {
+    background: rgba(236, 72, 153, 0.1);
+    border: 1px solid rgba(236, 72, 153, 0.3);
+    border-radius: 10px;
+    padding: 0.85rem 1.25rem;
+    color: var(--accent-pink);
+    font-size: 0.9rem;
+    text-align: center;
+  }
+
+  .btn-spinner { display: flex; justify-content: center; }
+
+  .contact-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: cspin 0.7s linear infinite;
+  }
+
+  @keyframes cspin { to { transform: rotate(360deg); } }
+
+  /* ── Success message ── */
+  .success-message {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 1.5rem;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all var(--transition-normal);
+  }
+
+  .success-message.active {
+    display: flex;
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .success-icon-wrap {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba(6, 182, 212, 0.1);
+    border: 2px solid var(--accent-cyan);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+  }
+
+  .success-svg {
+    width: 32px;
+    height: 32px;
+    color: var(--accent-cyan);
+  }
+
+  .success-message h3 {
+    font-size: 1.6rem;
+    margin: 0;
+  }
+
+  .success-message p {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    max-width: 360px;
+    margin: 0;
+  }
+
+  .reset-btn {
+    background: none;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 0.6rem 1.5rem;
+    border-radius: 100px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all var(--transition-fast);
+  }
+
+  .reset-btn:hover {
+    color: #fff;
+    border-color: var(--accent-cyan);
+    background: rgba(6, 182, 212, 0.05);
+  }
+
+  @media (max-width: 600px) {
+    .contact-card {
+      padding: 2rem 1.5rem;
+    }
+  }
+</style>
+
+<!-- ─── Client-side form logic ─── -->
+<script>
+  function setupContactForm() {
+    const form        = document.getElementById('portfolio-contact-form') as HTMLFormElement;
+    const successPane = document.getElementById('success-message');
+    const resetBtn    = document.getElementById('reset-form-btn');
+    const submitBtn   = document.getElementById('submit-contact-btn') as HTMLButtonElement;
+    const submitText  = document.getElementById('submit-contact-text')!;
+    const submitSpinner = document.getElementById('submit-contact-spinner')!;
+    const formError   = document.getElementById('form-error')!;
+
+    if (!form || !successPane || !resetBtn) return;
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      formError.style.display = 'none';
+
+      const name    = (document.getElementById('name') as HTMLInputElement).value.trim();
+      const email   = (document.getElementById('email') as HTMLInputElement).value.trim();
+      const subject = (document.getElementById('subject') as HTMLInputElement).value.trim();
+      const message = (document.getElementById('message') as HTMLTextAreaElement).value.trim();
+
+      if (!name || !email || !message) {
+        formError.textContent = 'Por favor completa los campos obligatorios.';
+        formError.style.display = 'block';
+        return;
+      }
+
+      // Loading state
+      submitBtn.disabled = true;
+      submitText.style.display = 'none';
+      submitSpinner.style.display = 'flex';
+
+      try {
+        const response = await fetch('/api/contact', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name,
+            email,
+            subject,
+            message,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Error al enviar el mensaje. Inténtalo de nuevo.');
+        }
+
+        // Success animation
+        form.style.opacity = '0';
+        form.style.transform = 'translateY(-20px)';
+        setTimeout(() => {
+          form.style.display = 'none';
+          successPane.style.display = 'flex';
+          void successPane.offsetWidth;
+          successPane.classList.add('active');
+        }, 300);
+      } catch (err: any) {
+        formError.textContent = err?.message || 'Error al enviar el mensaje. Inténtalo de nuevo.';
+        formError.style.display = 'block';
+      } finally {
+        submitBtn.disabled = false;
+        submitText.style.display = 'inline';
+        submitSpinner.style.display = 'none';
+      }
+    });
+
+    resetBtn.addEventListener('click', () => {
+      form.reset();
+      formError.style.display = 'none';
+      successPane.classList.remove('active');
+      successPane.style.opacity = '0';
+      successPane.style.transform = 'translateY(20px)';
+      setTimeout(() => {
+        successPane.style.display = 'none';
+        form.style.display = 'flex';
+        void form.offsetWidth;
+        form.style.opacity = '1';
+        form.style.transform = 'translateY(0)';
+      }, 300);
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', setupContactForm);
+  document.addEventListener('astro:page-load', setupContactForm);
+</script>

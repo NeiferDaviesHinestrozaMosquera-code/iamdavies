@@ -1,0 +1,1379 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { createServerSupabaseClient } from '../../lib/supabase';
+
+// ── Tab Components ──
+import GeneralTab from '../../components/admin/settings/GeneralTab.astro';
+import ProfileTab from '../../components/admin/settings/ProfileTab.astro';
+import SocialsTab from '../../components/admin/settings/SocialsTab.astro';
+import TrajectoryTab from '../../components/admin/settings/TrajectoryTab.astro';
+import CvTab from '../../components/admin/settings/CvTab.astro';
+import SecurityTab from '../../components/admin/settings/SecurityTab.astro';
+
+// Get cookies for authorized request
+const accessToken = Astro.cookies.get('sb-access-token')?.value;
+const refreshToken = Astro.cookies.get('sb-refresh-token')?.value;
+
+const supabase = await createServerSupabaseClient(accessToken, refreshToken);
+
+// Fetch settings on the server
+const { data: settings } = await supabase
+  .from('site_settings')
+  .select('*')
+  .eq('id', 1)
+  .single();
+
+// Fetch socials on the server
+const { data: socialsList = [] } = await supabase
+  .from('social_networks')
+  .select('*')
+  .order('order_index', { ascending: true });
+
+// Fetch trajectory on the server
+const { data: trajectoryList = [] } = await supabase
+  .from('trajectory')
+  .select('*')
+  .order('order_index', { ascending: true });
+---
+
+<AdminLayout title="iamdavies | Ajustes">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Ajustes</h1>
+      <p class="page-subtitle">Configura los elementos visuales, información del perfil y redes sociales.</p>
+    </div>
+  </div>
+
+  <!-- Hidden data element for initial settings SSR -->
+  <div id="initial-settings-data"
+       data-settings={JSON.stringify(settings)}
+       data-socials={JSON.stringify(socialsList)}
+       data-trajectory={JSON.stringify(trajectoryList)}
+       style="display:none;">
+  </div>
+
+  <!-- Tabs Bar -->
+  <div class="settings-tabs glass">
+    <button class="tab-btn active" data-target="tab-general">General</button>
+    <button class="tab-btn" data-target="tab-about">Perfil Principal</button>
+    <button class="tab-btn" data-target="tab-trajectory">Experiencia</button>
+    <button class="tab-btn" data-target="tab-cv">Datos CV & PDF</button>
+    <button class="tab-btn" data-target="tab-socials">Redes Sociales</button>
+    <button class="tab-btn" data-target="tab-security">Seguridad</button>
+  </div>
+
+  <!-- Loading State -->
+  <div id="settings-loading" class="loading-state" style="display:none;">
+    <div class="loading-spinner"></div>
+    <span>Cargando ajustes...</span>
+  </div>
+
+  <div id="settings-content" style="display:block; margin-top: 2rem;">
+    <GeneralTab settings={settings} />
+    <ProfileTab settings={settings} />
+    <SocialsTab socialsList={socialsList} />
+    <TrajectoryTab trajectoryList={trajectoryList} />
+    <CvTab settings={settings} />
+    <SecurityTab />
+  </div>
+
+  <div class="toast" id="toast" style="display:none;"></div>
+</AdminLayout>
+
+<style is:global>
+  .page-header { margin-bottom: 2rem; }
+  .page-title { font-size: 2.2rem; font-weight: 800; margin: 0 0 0.5rem 0; color: #fff; }
+  .page-subtitle { color: var(--text-secondary); margin: 0; font-size: 1.05rem; }
+
+  /* Tabs Bar */
+  .settings-tabs {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.05);
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    flex-wrap: nowrap;
+    margin-bottom: 2rem;
+  }
+
+  .settings-tabs::-webkit-scrollbar { display: none; }
+
+  .tab-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    padding: 0.75rem 1.25rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .tab-btn:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  .tab-btn.active {
+    color: #fff;
+    background: var(--accent-cyan);
+    color: var(--bg-primary);
+  }
+
+  /* Pane View toggle */
+  .tab-pane {
+    display: none;
+  }
+
+  .tab-pane.active {
+    display: block;
+  }
+
+  /* Loading state */
+  .loading-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    height: 200px;
+    color: var(--text-muted);
+  }
+
+  .loading-spinner {
+    width: 22px;
+    height: 22px;
+    border: 2px solid rgba(255,255,255,0.1);
+    border-top-color: var(--accent-cyan);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Grid layouts */
+  .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+  .settings-grid-crud { display: grid; grid-template-columns: 1.4fr 1fr; gap: 2rem; }
+  
+  @media (max-width: 1100px) {
+    .settings-grid { grid-template-columns: 1fr 1fr; }
+  }
+
+  @media (max-width: 900px) {
+    .settings-grid, .settings-grid-crud {
+      grid-template-columns: 1fr;
+    }
+    .tab-btn {
+      padding: 0.65rem 1rem;
+      font-size: 0.85rem;
+    }
+  }
+
+  .settings-col { display: flex; flex-direction: column; gap: 2rem; }
+  .settings-card { padding: 2rem; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); }
+
+  .card-header { margin-bottom: 2rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 1.5rem; }
+  .card-header h2 { font-size: 1.3rem; color: #fff; margin: 0 0 0.5rem 0; }
+  .card-header p { color: var(--text-muted); margin: 0; font-size: 0.9rem; }
+
+  .settings-form { display: flex; flex-direction: column; gap: 1.5rem; }
+  .input-group { display: flex; flex-direction: column; gap: 0.5rem; }
+  .input-group label { font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); }
+
+  .input-group input, .input-group textarea, .input-group select {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 0.85rem 1rem;
+    border-radius: 10px;
+    color: #fff;
+    font-family: inherit;
+    font-size: 0.95rem;
+    outline: none;
+    transition: all 0.2s;
+  }
+
+  .input-group select option {
+    background: #030014;
+    color: #fff;
+  }
+
+  .input-group textarea { resize: vertical; min-height: 90px; }
+
+  .input-group input:focus, .input-group textarea:focus, .input-group select:focus {
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 12px rgba(6, 182, 212, 0.15);
+  }
+
+  /* Image Upload Box */
+  .profile-pic-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .image-upload-area {
+    width: 240px;
+    height: 300px;
+    border: 2px dashed rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    overflow: hidden;
+    position: relative;
+    background: rgba(0,0,0,0.15);
+    transition: all 0.2s;
+  }
+
+  .image-upload-area:hover {
+    border-color: var(--accent-cyan);
+    background: rgba(6, 182, 212, 0.02);
+  }
+
+  .upload-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 1rem;
+  }
+
+  .upload-placeholder svg {
+    color: var(--text-muted);
+  }
+
+  .upload-placeholder small {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+  }
+
+  /* Table styling */
+  .table-container {
+    overflow-x: auto;
+  }
+
+  .admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+  }
+
+  .admin-table th, .admin-table td {
+    padding: 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .admin-table th {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-weight: 700;
+  }
+
+  .admin-table td {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+  }
+
+  .text-center { text-align: center; }
+
+  /* Buttons */
+  .save-btn {
+    align-self: flex-start;
+    background: var(--accent-cyan);
+    color: var(--bg-primary);
+    border: none;
+    padding: 0.85rem 1.5rem;
+    border-radius: 100px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 160px;
+    justify-content: center;
+  }
+
+  .save-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(6, 182, 212, 0.4); }
+  .save-btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
+
+  .action-btn {
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.02);
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+  }
+
+  .action-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .action-btn.danger {
+    background: rgba(236, 72, 153, 0.1);
+    border-color: rgba(236, 72, 153, 0.3);
+    color: var(--accent-pink);
+  }
+
+  .action-btn.danger:hover {
+    background: rgba(236, 72, 153, 0.2);
+  }
+
+  .text-btn {
+    background: none;
+    border: none;
+    color: var(--accent-cyan);
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 0.25rem 0.5rem;
+    transition: opacity 0.2s;
+  }
+
+  .text-btn:hover { opacity: 0.8; }
+  .text-btn.delete { color: var(--accent-pink); }
+
+  .cancel-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    padding: 0.85rem 1.5rem;
+    border-radius: 100px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .cancel-btn:hover { background: rgba(255, 255, 255, 0.1); }
+
+  .modal-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .w-full { width: 100%; }
+
+  .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(0,0,0,0.3);
+    border-top-color: var(--bg-primary);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  .pwd-error {
+    background: rgba(236, 72, 153, 0.1);
+    border: 1px solid rgba(236, 72, 153, 0.3);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    color: var(--accent-pink);
+    font-size: 0.85rem;
+  }
+
+  /* Switch styling */
+  .toggle-list { display: flex; flex-direction: column; gap: 1.5rem; }
+  .toggle-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.04);
+    transition: background 0.2s;
+  }
+  .toggle-item:hover { background: rgba(255,255,255,0.04); }
+  .toggle-item.border-warning { border-color: rgba(245, 158, 11, 0.15); }
+  .toggle-info h4 { margin: 0 0 0.25rem 0; color: #fff; font-size: 0.95rem; }
+  .toggle-info p { margin: 0; color: var(--text-muted); font-size: 0.82rem; }
+
+  .switch { position: relative; display: inline-block; width: 46px; height: 24px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background: rgba(255,255,255,0.1);
+    transition: .35s;
+    border-radius: 24px;
+  }
+
+  .slider:before {
+    content: "";
+    position: absolute;
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background: white;
+    transition: .35s;
+    border-radius: 50%;
+  }
+
+  input:checked + .slider { background: var(--accent-cyan); }
+  input:checked + .slider.red { background: var(--accent-pink); }
+  input:checked + .slider:before { transform: translateX(22px); }
+
+  /* Toast notification */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    backdrop-filter: blur(12px);
+    color: #fff;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    font-weight: 600;
+    z-index: 9999;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+    background: rgba(16, 185, 129, 0.9);
+  }
+
+  .toast.error { background: rgba(236, 72, 153, 0.9); }
+
+  /* Mobile settings padding override */
+  @media (max-width: 600px) {
+    .settings-card {
+      padding: 1.25rem;
+      border-radius: 16px;
+    }
+    .modal-actions {
+      flex-direction: column-reverse;
+      gap: 0.75rem;
+    }
+    .modal-actions button {
+      width: 100%;
+    }
+  }
+</style>
+
+<script>
+  import { supabase } from '../../lib/supabase';
+  import type { SiteSettings, SocialNetwork, Trajectory } from '../../lib/supabase';
+
+  document.addEventListener('astro:page-load', () => {
+    // Check if we are on the settings admin page
+    const loadingEl = document.getElementById('settings-loading');
+    if (!loadingEl) return;
+
+    const contentEl  = document.getElementById('settings-content')!;
+    const toast      = document.getElementById('toast')!;
+
+    // Tab switching logic
+    function setupTabs() {
+      const buttons = document.querySelectorAll('.tab-btn');
+      const panes = document.querySelectorAll('.tab-pane');
+
+      buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          buttons.forEach(b => b.classList.remove('active'));
+          panes.forEach(p => p.classList.remove('active'));
+
+          btn.classList.add('active');
+          const targetId = btn.getAttribute('data-target');
+          const pane = targetId ? document.getElementById(targetId) : null;
+          if (pane) pane.classList.add('active');
+        });
+      });
+    }
+
+    function showToast(msg: string, type: 'success' | 'error' = 'success') {
+      toast.textContent = msg;
+      toast.className = `toast${type === 'error' ? ' error' : ''}`;
+      toast.style.display = 'block';
+      setTimeout(() => { toast.style.display = 'none'; }, 3000);
+    }
+
+    let currentSettings: SiteSettings | null = null;
+    let socialsList: SocialNetwork[] = [];
+    let trajectoryList: Trajectory[] = [];
+    let langsList: any[] = [];
+    let eduList: any[] = [];
+
+    function extractStoragePath(publicUrl: string, bucket: string): string | null {
+      const marker = `/object/public/${bucket}/`;
+      const idx = publicUrl.indexOf(marker);
+      if (idx === -1) return null;
+      return publicUrl.substring(idx + marker.length);
+    }
+
+    // ── Load Settings ──
+    async function loadSettings(forceRefresh = false) {
+      const dataEl = document.getElementById('initial-settings-data');
+      if (dataEl && dataEl.dataset.settings && !forceRefresh) {
+        currentSettings = JSON.parse(dataEl.dataset.settings);
+        socialsList = JSON.parse(dataEl.dataset.socials || '[]');
+        trajectoryList = JSON.parse(dataEl.dataset.trajectory || '[]');
+        langsList = currentSettings?.languages || [];
+        eduList = currentSettings?.education || [];
+
+        attachSocialsListeners();
+        attachTrajectoryListeners();
+        renderLangs();
+        renderEdu();
+
+        loadingEl.style.display = 'none';
+        contentEl.style.display = 'block';
+        return;
+      }
+
+      loadingEl.style.display = 'flex';
+      contentEl.style.display = 'none';
+
+      // 1. Fetch site settings
+      const { data: s, error: sErr } = await supabase
+        .from('site_settings')
+        .select('*')
+        .eq('id', 1)
+        .single();
+
+      if (sErr || !s) {
+        showToast('Error al cargar ajustes generales.', 'error');
+      } else {
+        currentSettings = s as SiteSettings;
+        // General Identity
+        (document.getElementById('s-logo-text') as HTMLInputElement).value = s.logo_text || '';
+        (document.getElementById('s-hero-title') as HTMLInputElement).value = s.hero_title || '';
+        
+        // About Me Text fields
+        (document.getElementById('s-role') as HTMLInputElement).value = s.role_title || '';
+        (document.getElementById('s-bio') as HTMLTextAreaElement).value = s.bio || '';
+        (document.getElementById('s-about-text') as HTMLTextAreaElement).value = s.about_text || '';
+
+        // Setup CV fields
+        (document.getElementById('cv-skills') as HTMLTextAreaElement).value = (s.skills || []).join(', ');
+        (document.getElementById('cv-tools') as HTMLTextAreaElement).value = (s.tools || []).join(', ');
+        
+        langsList = s.languages || [];
+        eduList = s.education || [];
+        renderLangs();
+        renderEdu();
+
+        // Setup CV PDF Preview
+        const dlLink = document.getElementById('cv-download-link') as HTMLAnchorElement;
+        const placeholder = document.getElementById('cv-upload-placeholder')!;
+        const preview = document.getElementById('cv-preview')!;
+        const filename = document.getElementById('cv-filename')!;
+        const fileInfo = document.getElementById('cv-file-info')!;
+        if (s.cv_pdf_url) {
+          dlLink.href = s.cv_pdf_url;
+          filename.textContent = "curriculum-vitae.pdf";
+          placeholder.style.display = 'none';
+          preview.style.display = 'flex';
+          fileInfo.style.display = 'block';
+        } else {
+          placeholder.style.display = 'flex';
+          preview.style.display = 'none';
+          fileInfo.style.display = 'none';
+        }
+
+        // Toggles
+        const toggleKeys: (keyof SiteSettings)[] = [
+          'available_for_hire', 'neon_cursor_enabled', 'cv_download_enabled', 'maintenance_mode'
+        ];
+        document.querySelectorAll('.switch input[data-key]').forEach(el => {
+          const input = el as HTMLInputElement;
+          const key = input.dataset.key as keyof SiteSettings;
+          if (toggleKeys.includes(key)) {
+            input.checked = Boolean(s[key]);
+          }
+        });
+
+        // About Profile Image preview
+        const aboutPreview = document.getElementById('about-image-preview') as HTMLImageElement;
+        const aboutPlaceholder = document.getElementById('about-upload-placeholder')!;
+        if (s.about_image_url) {
+          aboutPreview.src = s.about_image_url;
+          aboutPreview.style.display = 'block';
+          aboutPlaceholder.style.display = 'none';
+          document.getElementById('about-image-info')!.style.display = 'block';
+        } else {
+          aboutPreview.src = '';
+          aboutPreview.style.display = 'none';
+          aboutPlaceholder.style.display = 'flex';
+          document.getElementById('about-image-info')!.style.display = 'none';
+        }
+      }
+
+      // 2. Load Socials & Trajectory
+      await Promise.all([loadSocials(true), loadTrajectory(true)]);
+
+      loadingEl.style.display = 'none';
+      contentEl.style.display = 'block';
+    }
+
+    // ── Toggle saving handler ──
+    document.querySelectorAll('.switch input[data-key]').forEach(el => {
+      const input = el as HTMLInputElement;
+      const key = input.dataset.key as keyof SiteSettings;
+      input.addEventListener('change', async () => {
+        const { error } = await supabase
+          .from('site_settings')
+          .update({ [key]: input.checked })
+          .eq('id', 1);
+        if (error) {
+          showToast('Error al guardar ajuste.', 'error');
+          input.checked = !input.checked; // Revert
+        } else {
+          showToast(input.checked ? 'Opción activada.' : 'Opción desactivada.');
+        }
+      });
+    });
+
+    // ── Save General & Logo ──
+    document.getElementById('general-form')!.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const saveBtn = document.getElementById('general-save-btn') as HTMLButtonElement;
+      const btnText = document.getElementById('general-btn-text')!;
+      const spinner = document.getElementById('general-spinner')!;
+
+      saveBtn.disabled = true;
+      btnText.style.display = 'none';
+      spinner.style.display = 'flex';
+
+      const logoText = (document.getElementById('s-logo-text') as HTMLInputElement).value.trim();
+      const heroTitle = (document.getElementById('s-hero-title') as HTMLInputElement).value.trim();
+
+      const { error } = await supabase
+        .from('site_settings')
+        .update({ logo_text: logoText, hero_title: heroTitle })
+        .eq('id', 1);
+
+      saveBtn.disabled = false;
+      btnText.style.display = 'inline';
+      spinner.style.display = 'none';
+
+      if (error) {
+        showToast('Error al guardar cambios.', 'error');
+      } else {
+        showToast('Cambios generales actualizados.');
+      }
+    });
+
+    // ── Save About Me Profile ──
+    document.getElementById('about-form')!.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const saveBtn = document.getElementById('about-save-btn') as HTMLButtonElement;
+      const btnText = document.getElementById('about-btn-text')!;
+      const spinner = document.getElementById('about-spinner')!;
+
+      saveBtn.disabled = true;
+      btnText.style.display = 'none';
+      spinner.style.display = 'flex';
+
+      const role = (document.getElementById('s-role') as HTMLInputElement).value.trim();
+      const bio  = (document.getElementById('s-bio') as HTMLTextAreaElement).value.trim();
+      const about = (document.getElementById('s-about-text') as HTMLTextAreaElement).value.trim();
+
+      const { error } = await supabase
+        .from('site_settings')
+        .update({ role_title: role, bio, about_text: about })
+        .eq('id', 1);
+
+      saveBtn.disabled = false;
+      btnText.style.display = 'inline';
+      spinner.style.display = 'none';
+
+      if (error) {
+        showToast('Error al guardar biografía.', 'error');
+      } else {
+        showToast('Biografía actualizada.');
+      }
+    });
+
+    // ── Handle About Profile Image Upload ──
+    const aboutImageArea = document.getElementById('about-image-area')!;
+    const fileInput = document.getElementById('f-about-image') as HTMLInputElement;
+
+    aboutImageArea.addEventListener('click', () => fileInput.click());
+
+    fileInput.addEventListener('change', async () => {
+      const file = fileInput.files?.[0];
+      if (!file) return;
+
+      // Clean up previous image from storage
+      if (currentSettings && currentSettings.about_image_url) {
+        const oldPath = extractStoragePath(currentSettings.about_image_url, 'project-images');
+        if (oldPath) {
+          await supabase.storage.from('project-images').remove([oldPath]);
+        }
+      }
+
+      showToast('Subiendo foto de perfil...');
+      const fileExt = file.name.split('.').pop();
+      const fileName = `about-avatar-${Date.now()}.${fileExt}`;
+      const filePath = `about/${fileName}`;
+
+      // Upload to 'project-images' bucket
+      const { error: uploadError } = await supabase.storage
+        .from('project-images')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        showToast('Error al subir la imagen.', 'error');
+        console.error(uploadError);
+        return;
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('project-images')
+        .getPublicUrl(filePath);
+
+      // Save URL to site_settings
+      const { error: dbError } = await supabase
+        .from('site_settings')
+        .update({ about_image_url: publicUrl })
+        .eq('id', 1);
+
+      if (dbError) {
+        showToast('Error al actualizar base de datos.', 'error');
+      } else {
+        showToast('Foto de perfil actualizada correctamente.');
+        if (currentSettings) {
+          currentSettings.about_image_url = publicUrl;
+        }
+        const preview = document.getElementById('about-image-preview') as HTMLImageElement;
+        const placeholder = document.getElementById('about-upload-placeholder')!;
+        preview.src = publicUrl;
+        preview.style.display = 'block';
+        placeholder.style.display = 'none';
+        document.getElementById('about-image-info')!.style.display = 'block';
+      }
+    });
+
+    // Remove photo
+    document.getElementById('remove-about-image')!.addEventListener('click', async () => {
+      // Clean up photo from storage
+      if (currentSettings && currentSettings.about_image_url) {
+        const oldPath = extractStoragePath(currentSettings.about_image_url, 'project-images');
+        if (oldPath) {
+          await supabase.storage.from('project-images').remove([oldPath]);
+        }
+      }
+
+      const { error } = await supabase
+        .from('site_settings')
+        .update({ about_image_url: null })
+        .eq('id', 1);
+
+      if (error) {
+        showToast('Error al quitar la foto.', 'error');
+      } else {
+        showToast('Foto quitada de tu perfil.');
+        if (currentSettings) {
+          currentSettings.about_image_url = null;
+        }
+        const preview = document.getElementById('about-image-preview') as HTMLImageElement;
+        const placeholder = document.getElementById('about-upload-placeholder')!;
+        preview.src = '';
+        preview.style.display = 'none';
+        placeholder.style.display = 'flex';
+        document.getElementById('about-image-info')!.style.display = 'none';
+      }
+    });
+
+    // ── SOCIAL NETWORKS CRUD ──
+    async function loadSocials(forceRefresh = false) {
+      if (!forceRefresh) return;
+
+      const { data, error } = await supabase
+        .from('social_networks')
+        .select('*')
+        .order('order_index', { ascending: true });
+
+      const tbody = document.getElementById('socials-tbody')!;
+      if (error || !data) {
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center">Error al cargar redes.</td></tr>`;
+        return;
+      }
+
+      socialsList = data as SocialNetwork[];
+      if (socialsList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center">No hay redes sociales configuradas.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = socialsList.map(s => `
+        <tr>
+          <td><strong>${s.name}</strong></td>
+          <td><a href="${s.url}" target="_blank" style="color:var(--accent-cyan); text-decoration:none;">${s.url}</a></td>
+          <td><code>${s.icon}</code></td>
+          <td>
+            <button type="button" class="text-btn edit-social-btn" data-id="${s.id}">Editar</button>
+            <button type="button" class="text-btn delete delete-social-btn" data-id="${s.id}">Eliminar</button>
+          </td>
+        </tr>
+      `).join('');
+
+      attachSocialsListeners();
+    }
+
+    function attachSocialsListeners() {
+      document.querySelectorAll('.edit-social-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-id')!;
+          const soc = socialsList.find(s => s.id === id);
+          if (soc) {
+            (document.getElementById('social-id') as HTMLInputElement).value = soc.id;
+            (document.getElementById('social-name') as HTMLInputElement).value = soc.name;
+            (document.getElementById('social-url') as HTMLInputElement).value = soc.url;
+            (document.getElementById('social-icon') as HTMLInputElement).value = soc.icon;
+            (document.getElementById('social-order') as HTMLInputElement).value = String(soc.order_index);
+            
+            document.getElementById('social-form-title')!.textContent = 'Editar Red Social';
+            document.getElementById('social-cancel-btn')!.style.display = 'inline-block';
+          }
+        });
+      });
+
+      document.querySelectorAll('.delete-social-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const id = btn.getAttribute('data-id')!;
+          if (confirm('¿Estás seguro de eliminar esta red social?')) {
+            const { error: delErr } = await supabase.from('social_networks').delete().eq('id', id);
+            if (delErr) {
+              showToast('Error al eliminar.', 'error');
+            } else {
+              showToast('Red social eliminada.');
+              loadSocials(true);
+            }
+          }
+        });
+      });
+    }
+
+    // Cancel edit social
+    document.getElementById('social-cancel-btn')!.addEventListener('click', () => {
+      resetSocialForm();
+    });
+
+    function resetSocialForm() {
+      (document.getElementById('social-id') as HTMLInputElement).value = '';
+      (document.getElementById('social-form') as HTMLFormElement).reset();
+      document.getElementById('social-form-title')!.textContent = 'Agregar Red Social';
+      document.getElementById('social-cancel-btn')!.style.display = 'none';
+    }
+
+    // Save Social (Add / Edit)
+    document.getElementById('social-form')!.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = (document.getElementById('social-id') as HTMLInputElement).value;
+      const name = (document.getElementById('social-name') as HTMLInputElement).value.trim();
+      const url = (document.getElementById('social-url') as HTMLInputElement).value.trim();
+      const icon = (document.getElementById('social-icon') as HTMLInputElement).value.trim();
+      const order = Number((document.getElementById('social-order') as HTMLInputElement).value);
+
+      if (!name || !url || !icon) {
+        showToast('Por favor completa todos los campos.', 'error');
+        return;
+      }
+
+      const payload = { name, url, icon, order_index: order };
+
+      if (id) {
+        // Edit
+        const { error } = await supabase.from('social_networks').update(payload).eq('id', id);
+        if (error) showToast('Error al actualizar.', 'error');
+        else {
+          showToast('Red social actualizada.');
+          resetSocialForm();
+          loadSocials(true);
+        }
+      } else {
+        // Add
+        const { error } = await supabase.from('social_networks').insert([payload]);
+        if (error) showToast('Error al agregar.', 'error');
+        else {
+          showToast('Red social agregada.');
+          resetSocialForm();
+          loadSocials(true);
+        }
+      }
+    });
+
+    // ── TRAJECTORY CRUD ──
+    async function loadTrajectory(forceRefresh = false) {
+      if (!forceRefresh) return;
+
+      const { data, error } = await supabase
+        .from('trajectory')
+        .select('*')
+        .order('order_index', { ascending: true });
+
+      const tbody = document.getElementById('trajectory-tbody')!;
+      if (error || !data) {
+        tbody.innerHTML = `<tr><td colspan="3" class="text-center">Error al cargar historial.</td></tr>`;
+        return;
+      }
+
+      trajectoryList = data as Trajectory[];
+      if (trajectoryList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" class="text-center">No hay trayectorias configuradas.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = trajectoryList.map(t => `
+        <tr>
+          <td><strong>${t.date_range}</strong></td>
+          <td>
+            <div style="font-weight:600; color:#fff;">${t.role}</div>
+            <div style="font-size:0.8rem; color:var(--text-muted);">${t.company}</div>
+          </td>
+          <td>
+            <button type="button" class="text-btn edit-traj-btn" data-id="${t.id}">Editar</button>
+            <button type="button" class="text-btn delete delete-traj-btn" data-id="${t.id}">Eliminar</button>
+          </td>
+        </tr>
+      `).join('');
+
+      attachTrajectoryListeners();
+    }
+
+    function attachTrajectoryListeners() {
+      document.querySelectorAll('.edit-traj-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-id')!;
+          const traj = trajectoryList.find(t => t.id === id);
+          if (traj) {
+            (document.getElementById('trajectory-id') as HTMLInputElement).value = traj.id;
+            (document.getElementById('traj-date') as HTMLInputElement).value = traj.date_range;
+            (document.getElementById('traj-role') as HTMLInputElement).value = traj.role;
+            (document.getElementById('traj-company') as HTMLInputElement).value = traj.company;
+            (document.getElementById('traj-desc') as HTMLTextAreaElement).value = traj.description;
+            (document.getElementById('traj-order') as HTMLInputElement).value = String(traj.order_index);
+            
+            document.getElementById('trajectory-form-title')!.textContent = 'Editar Trayectoria';
+            document.getElementById('traj-cancel-btn')!.style.display = 'inline-block';
+          }
+        });
+      });
+
+      document.querySelectorAll('.delete-traj-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const id = btn.getAttribute('data-id')!;
+          if (confirm('¿Estás seguro de eliminar este hito de trayectoria?')) {
+            const { error: delErr } = await supabase.from('trajectory').delete().eq('id', id);
+            if (delErr) {
+              showToast('Error al eliminar.', 'error');
+            } else {
+              showToast('Trayectoria eliminada.');
+              loadTrajectory(true);
+            }
+          }
+        });
+      });
+    }
+
+    // Cancel edit trajectory
+    document.getElementById('traj-cancel-btn')!.addEventListener('click', () => {
+      resetTrajectoryForm();
+    });
+
+    function resetTrajectoryForm() {
+      (document.getElementById('trajectory-id') as HTMLInputElement).value = '';
+      (document.getElementById('trajectory-form') as HTMLFormElement).reset();
+      document.getElementById('trajectory-form-title')!.textContent = 'Agregar Trayectoria';
+      document.getElementById('traj-cancel-btn')!.style.display = 'none';
+    }
+
+    // Save Trajectory
+    document.getElementById('trajectory-form')!.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = (document.getElementById('trajectory-id') as HTMLInputElement).value;
+      const date = (document.getElementById('traj-date') as HTMLInputElement).value.trim();
+      const role = (document.getElementById('traj-role') as HTMLInputElement).value.trim();
+      const company = (document.getElementById('traj-company') as HTMLInputElement).value.trim();
+      const desc = (document.getElementById('traj-desc') as HTMLTextAreaElement).value.trim();
+      const order = Number((document.getElementById('traj-order') as HTMLInputElement).value);
+
+      if (!date || !role || !company || !desc) {
+        showToast('Por favor completa todos los campos.', 'error');
+        return;
+      }
+
+      const payload = { date_range: date, role, company, description: desc, order_index: order };
+
+      if (id) {
+        // Edit
+        const { error } = await supabase.from('trajectory').update(payload).eq('id', id);
+        if (error) showToast('Error al actualizar.', 'error');
+        else {
+          showToast('Trayectoria actualizada.');
+          resetTrajectoryForm();
+          loadTrajectory(true);
+        }
+      } else {
+        // Add
+        const { error } = await supabase.from('trajectory').insert([payload]);
+        if (error) showToast('Error al agregar.', 'error');
+        else {
+          showToast('Trayectoria agregada.');
+          resetTrajectoryForm();
+          loadTrajectory(true);
+        }
+      }
+    });
+
+    // ── CV DATA SAVE LOGIC ──
+    document.getElementById('skills-form')!.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('skills-save-btn') as HTMLButtonElement;
+      btn.disabled = true;
+      
+      const skillsStr = (document.getElementById('cv-skills') as HTMLTextAreaElement).value;
+      const toolsStr = (document.getElementById('cv-tools') as HTMLTextAreaElement).value;
+      
+      const skills = skillsStr.split(',').map(s => s.trim()).filter(Boolean);
+      const tools = toolsStr.split(',').map(s => s.trim()).filter(Boolean);
+      
+      const { error } = await supabase.from('site_settings').update({ skills, tools }).eq('id', 1);
+      btn.disabled = false;
+      
+      if (error) showToast('Error al guardar skills/herramientas.', 'error');
+      else showToast('Skills y Herramientas actualizadas.');
+    });
+
+    // ── LANGUAGES CRUD HANDLERS ──
+    function renderLangs() {
+      const tbody = document.getElementById('langs-tbody')!;
+      if (!langsList || langsList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" class="text-center">No hay idiomas agregados.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = langsList.map((l, idx) => `
+        <tr>
+          <td><strong>${l.name}</strong></td>
+          <td>${l.level}</td>
+          <td>
+            <button type="button" class="text-btn edit-lang-btn" data-idx="${idx}">Editar</button>
+            <button type="button" class="text-btn delete delete-lang-btn" data-idx="${idx}">Eliminar</button>
+          </td>
+        </tr>
+      `).join('');
+      attachLangsListeners();
+    }
+
+    function attachLangsListeners() {
+      document.querySelectorAll('.edit-lang-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = Number(btn.getAttribute('data-idx'));
+          const lang = langsList[idx];
+          if (lang) {
+            (document.getElementById('lang-idx') as HTMLInputElement).value = String(idx);
+            (document.getElementById('lang-name') as HTMLInputElement).value = lang.name;
+            (document.getElementById('lang-level') as HTMLInputElement).value = lang.level;
+            
+            document.getElementById('lang-save-btn')!.textContent = 'Guardar Cambios';
+            document.getElementById('lang-cancel-btn')!.style.display = 'inline-block';
+          }
+        });
+      });
+
+      document.querySelectorAll('.delete-lang-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const idx = Number(btn.getAttribute('data-idx'));
+          if (confirm('¿Estás seguro de eliminar este idioma?')) {
+            langsList.splice(idx, 1);
+            await saveLanguagesDB();
+          }
+        });
+      });
+    }
+
+    async function saveLanguagesDB() {
+      const { error } = await supabase.from('site_settings').update({ languages: langsList }).eq('id', 1);
+      if (error) {
+        showToast('Error al actualizar idiomas.', 'error');
+      } else {
+        showToast('Idiomas actualizados.');
+        if (currentSettings) currentSettings.languages = langsList;
+        resetLangForm();
+        renderLangs();
+      }
+    }
+
+    function resetLangForm() {
+      (document.getElementById('lang-idx') as HTMLInputElement).value = '';
+      (document.getElementById('lang-form') as HTMLFormElement).reset();
+      document.getElementById('lang-save-btn')!.textContent = 'Agregar Idioma';
+      document.getElementById('lang-cancel-btn')!.style.display = 'none';
+    }
+
+    document.getElementById('lang-form')!.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const idxStr = (document.getElementById('lang-idx') as HTMLInputElement).value;
+      const name = (document.getElementById('lang-name') as HTMLInputElement).value.trim();
+      const level = (document.getElementById('lang-level') as HTMLInputElement).value.trim();
+
+      if (!name || !level) {
+        showToast('Por favor completa todos los campos.', 'error');
+        return;
+      }
+
+      const item = { name, level };
+
+      if (idxStr !== '') {
+        const idx = Number(idxStr);
+        langsList[idx] = item;
+      } else {
+        langsList.push(item);
+      }
+
+      await saveLanguagesDB();
+    });
+    
+    document.getElementById('lang-cancel-btn')!.addEventListener('click', resetLangForm);
+
+    // ── EDUCATION CRUD HANDLERS ──
+    function renderEdu() {
+      const tbody = document.getElementById('edu-tbody')!;
+      if (!eduList || eduList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" class="text-center">No hay educación configurada.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = eduList.map((e, idx) => `
+        <tr>
+          <td>
+            <div style="font-weight:600; color:#fff;">${e.degree}</div>
+            <div style="font-size:0.8rem; color:var(--text-muted);">${e.school}</div>
+          </td>
+          <td>${e.year}</td>
+          <td>
+            <button type="button" class="text-btn edit-edu-btn" data-idx="${idx}">Editar</button>
+            <button type="button" class="text-btn delete delete-edu-btn" data-idx="${idx}">Eliminar</button>
+          </td>
+        </tr>
+      `).join('');
+      attachEduListeners();
+    }
+
+    function attachEduListeners() {
+      document.querySelectorAll('.edit-edu-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = Number(btn.getAttribute('data-idx'));
+          const edu = eduList[idx];
+          if (edu) {
+            (document.getElementById('edu-idx') as HTMLInputElement).value = String(idx);
+            (document.getElementById('edu-degree') as HTMLInputElement).value = edu.degree;
+            (document.getElementById('edu-school') as HTMLInputElement).value = edu.school;
+            (document.getElementById('edu-year') as HTMLInputElement).value = edu.year;
+            (document.getElementById('edu-description') as HTMLTextAreaElement).value = edu.description || '';
+            
+            document.getElementById('edu-save-btn')!.textContent = 'Guardar Cambios';
+            document.getElementById('edu-cancel-btn')!.style.display = 'inline-block';
+          }
+        });
+      });
+
+      document.querySelectorAll('.delete-edu-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const idx = Number(btn.getAttribute('data-idx'));
+          if (confirm('¿Estás seguro de eliminar esta educación?')) {
+            eduList.splice(idx, 1);
+            await saveEducationDB();
+          }
+        });
+      });
+    }
+
+    async function saveEducationDB() {
+      const { error } = await supabase.from('site_settings').update({ education: eduList }).eq('id', 1);
+      if (error) {
+        showToast('Error al actualizar educación.', 'error');
+      } else {
+        showToast('Educación actualizada.');
+        if (currentSettings) currentSettings.education = eduList;
+        resetEduForm();
+        renderEdu();
+      }
+    }
+
+    function resetEduForm() {
+      (document.getElementById('edu-idx') as HTMLInputElement).value = '';
+      (document.getElementById('education-form') as HTMLFormElement).reset();
+      document.getElementById('edu-save-btn')!.textContent = 'Agregar Educación';
+      document.getElementById('edu-cancel-btn')!.style.display = 'none';
+    }
+
+    document.getElementById('education-form')!.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const idxStr = (document.getElementById('edu-idx') as HTMLInputElement).value;
+      const degree = (document.getElementById('edu-degree') as HTMLInputElement).value.trim();
+      const school = (document.getElementById('edu-school') as HTMLInputElement).value.trim();
+      const year = (document.getElementById('edu-year') as HTMLInputElement).value.trim();
+      const description = (document.getElementById('edu-description') as HTMLTextAreaElement).value.trim();
+
+      if (!degree || !school || !year) {
+        showToast('Por favor completa todos los campos obligatorios.', 'error');
+        return;
+      }
+
+      const item = { degree, school, year, description };
+
+      if (idxStr !== '') {
+        const idx = Number(idxStr);
+        eduList[idx] = item;
+      } else {
+        eduList.push(item);
+      }
+
+      await saveEducationDB();
+    });
+
+    document.getElementById('edu-cancel-btn')!.addEventListener('click', resetEduForm);
+
+    // ── CV PDF UPLOAD LOGIC ──
+    const cvImageArea = document.getElementById('cv-upload-area')!;
+    const fCvFile = document.getElementById('f-cv-file') as HTMLInputElement;
+
+    cvImageArea.addEventListener('click', () => fCvFile.click());
+
+    fCvFile.addEventListener('change', async () => {
+      const file = fCvFile.files?.[0];
+      if (!file) return;
+
+      if (file.type !== 'application/pdf') {
+        showToast('Solo se permiten archivos PDF.', 'error');
+        return;
+      }
+
+      // Clean up previous PDF from storage
+      if (currentSettings && currentSettings.cv_pdf_url) {
+        const oldPath = extractStoragePath(currentSettings.cv_pdf_url, 'documents');
+        if (oldPath) {
+          await supabase.storage.from('documents').remove([oldPath]);
+        }
+      }
+
+      showToast('Subiendo archivo PDF...');
+      const fileName = `cv-${Date.now()}.pdf`;
+      
+      // Upload to 'documents' bucket
+      const { error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(fileName, file);
+
+      if (uploadError) {
+        showToast('Error al subir el PDF.', 'error');
+        console.error(uploadError);
+        return;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('documents')
+        .getPublicUrl(fileName);
+
+      const { error: dbError } = await supabase
+        .from('site_settings')
+        .update({ cv_pdf_url: publicUrl })
+        .eq('id', 1);
+
+      if (dbError) {
+        showToast('Error al actualizar base de datos.', 'error');
+      } else {
+        showToast('PDF actualizado correctamente.');
+        if (currentSettings) {
+          currentSettings.cv_pdf_url = publicUrl;
+        }
+        const dlLink = document.getElementById('cv-download-link') as HTMLAnchorElement;
+        const placeholder = document.getElementById('cv-upload-placeholder')!;
+        const preview = document.getElementById('cv-preview')!;
+        const filenameLabel = document.getElementById('cv-filename')!;
+        
+        dlLink.href = publicUrl;
+        filenameLabel.textContent = file.name;
+        preview.style.display = 'flex';
+        placeholder.style.display = 'none';
+        document.getElementById('cv-file-info')!.style.display = 'block';
+      }
+    });
+
+    document.getElementById('remove-cv-btn')!.addEventListener('click', async () => {
+      // Clean up PDF from storage
+      if (currentSettings && currentSettings.cv_pdf_url) {
+        const oldPath = extractStoragePath(currentSettings.cv_pdf_url, 'documents');
+        if (oldPath) {
+          await supabase.storage.from('documents').remove([oldPath]);
+        }
+      }
+
+      const { error } = await supabase.from('site_settings').update({ cv_pdf_url: null }).eq('id', 1);
+      if (error) {
+        showToast('Error al quitar PDF.', 'error');
+      } else {
+        showToast('PDF eliminado.');
+        if (currentSettings) {
+          currentSettings.cv_pdf_url = null;
+        }
+        document.getElementById('cv-preview')!.style.display = 'none';
+        document.getElementById('cv-upload-placeholder')!.style.display = 'flex';
+        document.getElementById('cv-file-info')!.style.display = 'none';
+      }
+    });
+
+    // ── UPDATE PASSWORD ──
+    document.getElementById('password-form')!.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const pwdError  = document.getElementById('pwd-error')!;
+      const saveBtn   = document.getElementById('pwd-save-btn') as HTMLButtonElement;
+      const btnText   = document.getElementById('pwd-btn-text')!;
+      const spinner   = document.getElementById('pwd-spinner')!;
+      const newPwd    = (document.getElementById('s-new-pwd') as HTMLInputElement).value;
+      const confirmPwd = (document.getElementById('s-confirm-pwd') as HTMLInputElement).value;
+
+      pwdError.style.display = 'none';
+
+      if (!newPwd || newPwd.length < 6) {
+        pwdError.textContent = 'La contraseña debe tener al menos 6 caracteres.';
+        pwdError.style.display = 'block';
+        return;
+      }
+
+      if (newPwd !== confirmPwd) {
+        pwdError.textContent = 'Las contraseñas no coinciden.';
+        pwdError.style.display = 'block';
+        return;
+      }
+
+      saveBtn.disabled = true;
+      btnText.style.display = 'none';
+      spinner.style.display = 'flex';
+
+      const { error } = await supabase.auth.updateUser({ password: newPwd });
+
+      saveBtn.disabled = false;
+      btnText.style.display = 'inline';
+      spinner.style.display = 'none';
+
+      if (error) {
+        pwdError.textContent = error.message || 'Error al actualizar la contraseña.';
+        pwdError.style.display = 'block';
+      } else {
+        showToast('Contraseña actualizada correctamente.');
+        (document.getElementById('password-form') as HTMLFormElement).reset();
+      }
+    });
+
+    // Initialization
+    setupTabs();
+    loadSettings();
+  });
+</script>

@@ -1,0 +1,89 @@
+---
+/**
+ * TrajectoryTab.astro
+ * Settings tab for managing work experience / trajectory (CRUD).
+ */
+import type { Trajectory } from '../../../../lib/supabase';
+
+interface Props {
+  trajectoryList: Trajectory[];
+}
+
+const { trajectoryList } = Astro.props;
+---
+
+<div id="tab-trajectory" class="tab-pane">
+  <div class="settings-grid-crud">
+    <!-- List -->
+    <div class="settings-card glass">
+      <div class="card-header">
+        <h2>Experiencia y Trayectoria</h2>
+        <p>Configura tu historial laboral visible en Sobre Mí y el CV.</p>
+      </div>
+      <div class="table-container">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Periodo</th>
+              <th>Rol / Empresa</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="trajectory-tbody">
+            {trajectoryList.map(t => (
+              <tr data-id={t.id}>
+                <td><strong>{t.date_range}</strong></td>
+                <td>
+                  <div style="font-weight:600; color:#fff;">{t.role}</div>
+                  <div style="font-size:0.8rem; color:var(--text-muted);">{t.company}</div>
+                </td>
+                <td>
+                  <button type="button" class="text-btn edit-traj-btn" data-id={t.id}>Editar</button>
+                  <button type="button" class="text-btn delete delete-traj-btn" data-id={t.id}>Eliminar</button>
+                </td>
+              </tr>
+            ))}
+            {trajectoryList.length === 0 && (
+              <tr><td colspan="3" class="text-center">No hay trayectorias configuradas.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Add/Edit Form -->
+    <div class="settings-card glass" id="trajectory-form-card">
+      <div class="card-header">
+        <h2 id="trajectory-form-title">Agregar Trayectoria</h2>
+        <p>Añade un nuevo hito a tu historial laboral.</p>
+      </div>
+      <form class="settings-form" id="trajectory-form" novalidate>
+        <input type="hidden" id="trajectory-id" />
+        <div class="input-group">
+          <label for="traj-date">Periodo (Rango de Fecha)</label>
+          <input type="text" id="traj-date" placeholder="Ej: 2024 - Presente" required />
+        </div>
+        <div class="input-group">
+          <label for="traj-role">Rol / Puesto</label>
+          <input type="text" id="traj-role" placeholder="Ej: Senior Frontend Engineer" required />
+        </div>
+        <div class="input-group">
+          <label for="traj-company">Empresa</label>
+          <input type="text" id="traj-company" placeholder="Ej: TechCorp Solutions" required />
+        </div>
+        <div class="input-group">
+          <label for="traj-desc">Descripción / Funciones</label>
+          <textarea id="traj-desc" rows="4" placeholder="Escribe las tareas principales del puesto..." required></textarea>
+        </div>
+        <div class="input-group">
+          <label for="traj-order">Posición / Orden</label>
+          <input type="number" id="traj-order" value="1" min="1" required />
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="cancel-btn" id="traj-cancel-btn" style="display:none;">Cancelar</button>
+          <button type="submit" class="save-btn" id="traj-save-btn">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

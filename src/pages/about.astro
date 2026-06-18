@@ -1,0 +1,303 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { supabase } from '../lib/supabase';
+import ServiceCard from '../components/about/ServiceCard.astro';
+import TrajectoryTimeline from '../components/about/TrajectoryTimeline.astro';
+import EducationTimeline from '../components/about/EducationTimeline.astro';
+import CvSidebar from '../components/about/CvSidebar.astro';
+
+// Fetch settings
+const { data: settings } = await supabase
+  .from('site_settings')
+  .select('about_image_url, about_text, cv_pdf_url, skills, tools, languages, education, cv_download_enabled')
+  .single();
+
+const aboutText = settings?.about_text || 'Creación de interfaces estéticas, interactivas y centradas en el usuario, optimizando flujos de experiencia e identidad visual digital.';
+const aboutImageUrl = settings?.about_image_url || '/portrait.png';
+const cvPdfUrl = settings?.cv_pdf_url;
+const skills = settings?.skills || [];
+const tools = settings?.tools || [];
+const languages = settings?.languages || [];
+const education = settings?.education || [];
+const cvDownloadEnabled = settings?.cv_download_enabled ?? true;
+
+// Fetch experience trajectory
+const { data: trajectory = [] } = await supabase
+  .from('trajectory')
+  .select('*')
+  .order('order_index', { ascending: true });
+
+// Fetch socials for schema
+const { data: socials = [] } = await supabase
+  .from('social_networks')
+  .select('url')
+  .order('order_index', { ascending: true });
+
+const sameAsUrls = (socials || []).map(s => s.url).filter(Boolean);
+const schema = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "Dev Davies",
+  "description": aboutText,
+  "image": new URL(aboutImageUrl, Astro.site || Astro.url.origin).href,
+  "url": new URL('about', Astro.site || Astro.url.origin).href,
+  "sameAs": sameAsUrls,
+  "knowsAbout": [...skills, ...tools]
+};
+---
+
+<Layout title="Sobre Mí" description={aboutText} image={aboutImageUrl} schema={schema}>
+  <div class="starfield"></div>
+  <div class="nebula-glow nebula-purple"></div>
+  <div class="nebula-glow nebula-cyan"></div>
+
+  <!-- Background Orbit Trails -->
+  <div class="orbit-container">
+    <div class="orbit-line" style="--orbit-duration: 50s; --orbit-rotate: 15deg; width: 600px; height: 600px;">
+      <div class="orbit-node" style="--node-color: var(--accent-cyan); --node-size: 10px;"></div>
+    </div>
+    <div class="orbit-line" style="--orbit-duration: 70s; --orbit-rotate: -45deg; width: 900px; height: 900px;">
+      <div class="orbit-node" style="--node-color: var(--accent-pink); --node-size: 14px;"></div>
+    </div>
+    <div class="orbit-line" style="--orbit-duration: 90s; --orbit-rotate: 120deg; width: 1200px; height: 1200px;">
+      <div class="orbit-node" style="--node-color: var(--accent-purple); --node-size: 12px;"></div>
+    </div>
+  </div>
+
+  <!-- Floating 3D Geometric shapes -->
+  <svg class="geo-shape shape-cube-1" style="left: 10%; top: 20%; color: var(--accent-cyan); width: 40px; height: 40px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+    <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+    <line x1="12" y1="22.08" x2="12" y2="12"></line>
+  </svg>
+  <svg class="geo-shape shape-pyramid" style="right: 8%; top: 35%; color: var(--accent-pink); width: 50px; height: 50px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+    <path d="M12 2L2 20h20L12 2z"></path>
+    <path d="M12 2v18"></path>
+    <path d="M2 20l10-10 10 10"></path>
+  </svg>
+  <div class="geo-shape shape-sphere" style="left: 12%; bottom: 15%; width: 30px; height: 30px; background: radial-gradient(circle at 30% 30%, var(--accent-purple), #030014); border-radius: 50%; box-shadow: 0 0 15px var(--accent-purple); opacity: 0.4;"></div>
+  <svg class="geo-shape shape-cylinder" style="right: 15%; bottom: 20%; color: var(--accent-cyan); width: 35px; height: 35px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+    <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+    <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+    <ellipse cx="12" cy="19" rx="9" ry="3" style="opacity: 0.5"></ellipse>
+  </svg>
+
+  <section class="about-section container">
+    <div class="about-main-grid">
+      <!-- Left Side: Profile Image Container -->
+      <div class="profile-image-container reveal-left">
+        <div class="profile-image-wrapper glass">
+          <img src={aboutImageUrl} alt="Davies Portrait" class="profile-img" />
+          <div class="profile-glow"></div>
+        </div>
+      </div>
+
+      <!-- Right Side: Text & Service Cards -->
+      <div class="profile-info-container reveal-right">
+        <div style="display:flex; justify-content:space-between; align-items:flex-end; gap: 1rem; flex-wrap: wrap;">
+          <h1 class="section-title-alt">Sobre Mí</h1>
+          
+          {cvDownloadEnabled && (
+            <a href={cvPdfUrl || '#'} target={cvPdfUrl ? "_blank" : "_self"} onclick={!cvPdfUrl ? "window.print()" : ""} class="download-btn glow-effect reveal" style="text-decoration:none;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              Descargar CV
+            </a>
+          )}
+        </div>
+        
+        <div class="services-list">
+          <div class="about-bio-text glass reveal delay-1" style="padding: 1.5rem 2rem; border-radius: 20px; line-height: 1.6; color: var(--text-secondary);">
+            <p style="margin: 0;">{aboutText}</p>
+          </div>
+
+          <!-- Card 1: UI/UX Design -->
+          <ServiceCard title="UI/UX Design" description="Creación de interfaces estéticas, interactivas y centradas en el usuario, optimizando flujos de experiencia e identidad visual digital." theme="cyan" delayClass="delay-2" />
+
+          <!-- Card 2: Frontend Development -->
+          <ServiceCard title="Frontend Development" description="Desarrollo de lógica cliente limpia utilizando frameworks reactivos rápidos. Especialista en optimizaciones de Core Web Vitals." theme="pink" delayClass="delay-3" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Unified CV Section -->
+    <div class="unified-cv-grid">
+      <!-- Career Timeline Section -->
+      <div class="timeline-container">
+        <h2 class="timeline-title reveal"><span class="gradient-text">/</span> Mi Trayectoria</h2>
+        <TrajectoryTimeline trajectory={trajectory} />
+
+        {education && education.length > 0 && (
+          <div style="margin-top: 4rem;">
+            <h2 class="timeline-title reveal"><span class="gradient-text">/</span> Educación</h2>
+            <EducationTimeline education={education} />
+          </div>
+        )}
+      </div>
+
+      <!-- CV Sidebar Info -->
+      <CvSidebar skills={skills} tools={tools} languages={languages} />
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .about-section {
+    padding-top: 2rem;
+    padding-bottom: 8rem;
+    position: relative;
+  }
+
+  .about-main-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 4rem;
+    align-items: center;
+    margin-bottom: 8rem;
+  }
+
+  /* Profile photo styling with lighting */
+  .profile-image-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+  }
+
+  .profile-image-wrapper {
+    position: relative;
+    width: 320px;
+    height: 400px;
+    border-radius: 32px;
+    overflow: hidden;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 30px 60px -20px rgba(0,0,0,0.8);
+    animation: float-slow 10s ease-in-out infinite;
+  }
+
+  .profile-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 2;
+  }
+
+  .profile-glow {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.3) 0%, rgba(236, 72, 153, 0.3) 100%);
+    filter: blur(25px);
+    z-index: 1;
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
+  /* Right Text content */
+  .profile-info-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+  }
+
+  .section-title-alt {
+    font-size: clamp(2.5rem, 6vw, 3.8rem);
+    font-family: var(--font-sans);
+    font-weight: 800;
+    margin: 0;
+    background: linear-gradient(135deg, #fff 40%, #a1a1aa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .services-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  /* Timeline Styles */
+  .timeline-container {
+    margin-top: 4rem;
+  }
+
+  .timeline-title {
+    font-size: 2.2rem;
+    font-family: var(--font-mono);
+    margin-bottom: 3.5rem;
+  }
+
+  /* 3D Shapes Animation floats */
+  .shape-cube-1 {
+    animation: float-slow 15s ease-in-out infinite alternate;
+  }
+  .shape-pyramid {
+    animation: float-medium 12s ease-in-out infinite alternate-reverse;
+  }
+  .shape-sphere {
+    animation: float-fast 8s ease-in-out infinite alternate;
+  }
+  .shape-cylinder {
+    animation: float-slow 20s ease-in-out infinite alternate;
+  }
+
+  /* CV Download Button */
+  .download-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1.5rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 100px;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+  }
+
+  .download-btn:hover {
+    background: rgba(6, 182, 212, 0.1);
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.2);
+  }
+
+  .download-btn svg { width: 18px; height: 18px; }
+
+  .unified-cv-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 4rem;
+    align-items: start;
+  }
+
+  @media (max-width: 900px) {
+    .about-main-grid {
+      grid-template-columns: 1fr;
+      gap: 3rem;
+    }
+
+    .profile-info-container > div {
+      flex-direction: column;
+      align-items: flex-start !important;
+      gap: 1.5rem;
+    }
+
+    .unified-cv-grid {
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+
+    .profile-image-wrapper {
+      width: 280px;
+      height: 350px;
+    }
+  }
+</style>

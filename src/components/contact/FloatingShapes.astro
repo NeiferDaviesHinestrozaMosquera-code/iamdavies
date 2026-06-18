@@ -1,0 +1,48 @@
+---
+/**
+ * FloatingShapes.astro
+ * Decorative floating 3D geometric shapes (cube, spheres, pyramid)
+ * rendered around the contact form area.
+ */
+---
+
+<div class="shapes-container">
+  <!-- Purple Cube Left -->
+  <div class="geo-shape shape-cube-contact-1" style="left: 15%; top: 35%; color: var(--accent-purple); width: 45px; height: 45px;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+      <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+      <line x1="12" y1="22.08" x2="12" y2="12"></line>
+    </svg>
+  </div>
+
+  <!-- Cyan Sphere Right -->
+  <div class="geo-shape shape-sphere-contact" style="right: 18%; top: 25%; width: 40px; height: 40px; background: radial-gradient(circle at 35% 35%, var(--accent-cyan), #030014); border-radius: 50%; box-shadow: 0 0 20px var(--accent-cyan); opacity: 0.35;"></div>
+
+  <!-- Pink Pyramid Left-Bottom -->
+  <div class="geo-shape shape-pyramid-contact" style="left: 20%; bottom: 20%; color: var(--accent-pink); width: 40px; height: 40px;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <path d="M12 2L2 20h20L12 2z"></path>
+      <path d="M12 2v18"></path>
+      <path d="M2 20l10-10 10 10"></path>
+    </svg>
+  </div>
+
+  <!-- Purple Sphere Right-Bottom -->
+  <div class="geo-shape shape-sphere-contact-2" style="right: 15%; bottom: 25%; width: 25px; height: 25px; background: radial-gradient(circle at 30% 30%, var(--accent-purple), #030014); border-radius: 50%; box-shadow: 0 0 12px var(--accent-purple); opacity: 0.3;"></div>
+</div>
+
+<style>
+  .shapes-container {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    overflow: hidden;
+  }
+
+  .shape-cube-contact-1    { animation: float-slow 18s ease-in-out infinite alternate; }
+  .shape-sphere-contact    { animation: float-medium 14s ease-in-out infinite alternate; }
+  .shape-pyramid-contact   { animation: float-slow 16s ease-in-out infinite alternate-reverse; }
+  .shape-sphere-contact-2  { animation: float-fast 10s ease-in-out infinite alternate; }
+</style>

@@ -1,0 +1,195 @@
+---
+/**
+ * CvTab.astro
+ * Settings tab for CV data: PDF upload, skills/tools tags,
+ * languages CRUD, and education CRUD.
+ */
+import type { SiteSettings } from '../../../../lib/supabase';
+
+interface Props {
+  settings: SiteSettings | null;
+}
+
+const { settings } = Astro.props;
+---
+
+<div id="tab-cv" class="tab-pane">
+  <div class="settings-grid">
+    <!-- PDF & Tags -->
+    <div class="settings-col">
+      <div class="settings-card glass">
+        <div class="card-header">
+          <h2>Archivo PDF del CV</h2>
+          <p>Sube tu currículum oficial en formato PDF para que los visitantes puedan descargarlo.</p>
+        </div>
+        <div class="profile-pic-container">
+          <div class="image-upload-area" id="cv-upload-area" style="height: 180px; width: 100%;">
+            <div class="upload-placeholder" id="cv-upload-placeholder" style={settings?.cv_pdf_url ? "display:none;" : ""}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="12" y1="18" x2="12" y2="12"></line>
+                <polyline points="9 15 12 18 15 15"></polyline>
+              </svg>
+              <span>Haz clic para subir PDF</span>
+            </div>
+            <div id="cv-preview" style={settings?.cv_pdf_url ? "display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%;" : "display:none; flex-direction:column; align-items:center; justify-content:center; height:100%;"}>
+              <svg viewBox="0 0 24 24" fill="var(--accent-pink)" stroke="none" width="48" height="48" style="margin-bottom:1rem;">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              </svg>
+              <span id="cv-filename" style="color:#fff; font-weight:600; text-align:center; word-break:break-all; padding:0 1rem;">curriculum-vitae.pdf</span>
+            </div>
+            <input type="file" id="f-cv-file" accept="application/pdf" style="display:none;" />
+          </div>
+          <div id="cv-file-info" style={settings?.cv_pdf_url ? "display:block; margin-top: 1rem; width:100%;" : "display:none; margin-top: 1rem; width:100%;"}>
+            <a href={settings?.cv_pdf_url || '#'} target="_blank" id="cv-download-link" class="action-btn secondary w-full" style="display:flex; justify-content:center; align-items:center; gap:0.5rem; text-decoration:none; margin-bottom:0.5rem;">
+              Ver PDF Actual
+            </a>
+            <button type="button" class="action-btn danger w-full" id="remove-cv-btn">Eliminar PDF</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-card glass">
+        <div class="card-header">
+          <h2>Habilidades y Herramientas</h2>
+          <p>Ingresa tus habilidades separadas por comas.</p>
+        </div>
+        <form class="settings-form" id="skills-form" novalidate>
+          <div class="input-group">
+            <label for="cv-skills">Core Skills</label>
+            <textarea id="cv-skills" rows="3" placeholder="React, Astro, TypeScript...">{(settings?.skills || []).join(', ')}</textarea>
+          </div>
+          <div class="input-group">
+            <label for="cv-tools">Herramientas</label>
+            <textarea id="cv-tools" rows="3" placeholder="Git, Docker, Vercel...">{(settings?.tools || []).join(', ')}</textarea>
+          </div>
+          <button type="submit" class="save-btn" id="skills-save-btn">
+            <span id="skills-btn-text">Guardar Tags</span>
+            <div id="skills-spinner" style="display:none;"><div class="spinner"></div></div>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Languages & Education Structured CRUD -->
+    <div class="settings-col">
+      <div class="settings-card glass" id="langs-card">
+        <div class="card-header">
+          <h2>Idiomas</h2>
+          <p>Gestiona tus idiomas y niveles.</p>
+        </div>
+
+        <div class="table-container" style="margin-bottom: 1.5rem;">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Idioma</th>
+                <th>Nivel</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="langs-tbody">
+              {settings?.languages?.map((l: any, idx: number) => (
+                <tr data-idx={idx}>
+                  <td><strong>{l.name}</strong></td>
+                  <td>{l.level}</td>
+                  <td>
+                    <button type="button" class="text-btn edit-lang-btn" data-idx={idx}>Editar</button>
+                    <button type="button" class="text-btn delete delete-lang-btn" data-idx={idx}>Eliminar</button>
+                  </td>
+                </tr>
+              ))}
+              {(!settings?.languages || settings.languages.length === 0) && (
+                <tr><td colspan="3" class="text-center">No hay idiomas agregados.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <form class="settings-form" id="lang-form" novalidate style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1.5rem;">
+          <input type="hidden" id="lang-idx" />
+          <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="input-group">
+              <label for="lang-name">Nombre</label>
+              <input type="text" id="lang-name" placeholder="Ej: Inglés" />
+            </div>
+            <div class="input-group">
+              <label for="lang-level">Nivel</label>
+              <input type="text" id="lang-level" placeholder="Ej: C1 / Nativo" />
+            </div>
+          </div>
+          <div class="modal-actions" style="margin-top: 0.5rem;">
+            <button type="button" class="cancel-btn" id="lang-cancel-btn" style="display:none; padding: 0.5rem 1.2rem; font-size: 0.85rem;">Cancelar</button>
+            <button type="submit" class="save-btn" id="lang-save-btn" style="padding: 0.5rem 1.2rem; font-size: 0.85rem; min-width: auto;">Agregar Idioma</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="settings-card glass" id="edu-card">
+        <div class="card-header">
+          <h2>Educación</h2>
+          <p>Historial académico.</p>
+        </div>
+
+        <div class="table-container" style="margin-bottom: 1.5rem;">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Título / Institución</th>
+                <th>Año</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="edu-tbody">
+              {settings?.education?.map((e: any, idx: number) => (
+                <tr data-idx={idx}>
+                  <td>
+                    <div style="font-weight:600; color:#fff;">{e.degree}</div>
+                    <div style="font-size:0.8rem; color:var(--text-muted);">{e.school}</div>
+                  </td>
+                  <td>{e.year}</td>
+                  <td>
+                    <button type="button" class="text-btn edit-edu-btn" data-idx={idx}>Editar</button>
+                    <button type="button" class="text-btn delete delete-edu-btn" data-idx={idx}>Eliminar</button>
+                  </td>
+                </tr>
+              ))}
+              {(!settings?.education || settings.education.length === 0) && (
+                <tr><td colspan="3" class="text-center">No hay educación configurada.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <form class="settings-form" id="education-form" novalidate style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1.5rem;">
+          <input type="hidden" id="edu-idx" />
+          <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="input-group">
+              <label for="edu-degree">Título / Grado</label>
+              <input type="text" id="edu-degree" placeholder="Ej: Ingeniería de Software" />
+            </div>
+            <div class="input-group">
+              <label for="edu-school">Institución</label>
+              <input type="text" id="edu-school" placeholder="Ej: Universidad..." />
+            </div>
+          </div>
+          <div class="form-row" style="display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 0.5rem;">
+            <div class="input-group">
+              <label for="edu-year">Año / Periodo</label>
+              <input type="text" id="edu-year" placeholder="Ej: 2018 - 2022" />
+            </div>
+            <div class="input-group">
+              <label for="edu-description">Descripción (opcional)</label>
+              <textarea id="edu-description" rows="2" placeholder="Especialización, logros..."></textarea>
+            </div>
+          </div>
+          <div class="modal-actions" style="margin-top: 0.5rem;">
+            <button type="button" class="cancel-btn" id="edu-cancel-btn" style="display:none; padding: 0.5rem 1.2rem; font-size: 0.85rem;">Cancelar</button>
+            <button type="submit" class="save-btn" id="edu-save-btn" style="padding: 0.5rem 1.2rem; font-size: 0.85rem; min-width: auto;">Agregar Educación</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
