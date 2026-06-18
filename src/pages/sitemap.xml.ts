@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import { supabase } from '../lib/supabase';
 
 export const GET: APIRoute = async ({ site }) => {
-  const siteUrl = (site ? site.toString() : 'https://iamdavies.com').replace(/\/$/, '');
+  const siteUrl = (site ? site.toString() : 'https://iamdavies.vercel.app').replace(/\/$/, '');
   
   // 1. Define static routes
   const staticPages = ['', 'about', 'projects', 'contact', 'blog'];

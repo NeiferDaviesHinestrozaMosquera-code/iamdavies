@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 
 export const GET: APIRoute = async ({ site }) => {
-  const siteUrl = site || 'https://iamdavies.com';
+  const siteUrl = site || 'https://iamdavies.vercel.app';
   const robots = `User-agent: *
 Allow: /
 Disallow: /admin/
