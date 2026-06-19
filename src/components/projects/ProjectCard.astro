@@ -1,5 +1,6 @@
 ---
 import type { Project } from '../../lib/supabase';
+import { getImage } from 'astro:assets';
 
 interface Props {
   project: Project;
@@ -8,6 +9,47 @@ interface Props {
 
 const { project, index } = Astro.props;
 
+const formatUrl = (url: string | null) => {
+  if (!url) return '';
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+  if (/^(https?:\/\/|mailto:|tel:|javascript:)/i.test(trimmed)) {
+    return trimmed;
+  }
+  return `https://${trimmed}`;
+};
+
+const formattedLiveUrl = formatUrl(project.live_url);
+const formattedGithubUrl = formatUrl(project.github_url);
+
+// Optimize main image (if present)
+let optimizedMainUrl = '';
+if (project.image_url) {
+  try {
+    const opt = await getImage({ src: project.image_url, width: 800, height: 450, format: 'webp' });
+    optimizedMainUrl = opt.src;
+  } catch (e) {
+    console.error('Error optimizing project.image_url:', e);
+    optimizedMainUrl = project.image_url;
+  }
+}
+
+// Optimize multiple carousel images
+let optimizedCarouselUrls: string[] = [];
+if (project.images_urls && project.images_urls.length > 0) {
+  optimizedCarouselUrls = await Promise.all(
+    project.images_urls.map(async (url) => {
+      try {
+        const opt = await getImage({ src: url, width: 800, height: 450, format: 'webp' });
+        return opt.src;
+      } catch (e) {
+        console.error('Error optimizing carousel image:', url, e);
+        return url;
+      }
+    })
+  );
+}
+
 const catFilterVal = project.category ? project.category.toLowerCase().replace(/\s+/g, '-') : 'general';
 const animationDelayClass = index % 3 === 0 ? 'delay-1' : index % 3 === 1 ? 'delay-2' : 'delay-3';
 const initials = project.title.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
@@ -15,25 +57,29 @@ const initials = project.title.split(' ').map(w => w[0]).join('').slice(0, 2).to
 
 <div class={`project-card glass reveal-scale ${animationDelayClass}`} data-category={catFilterVal}>
   <div class="project-visual">
-    {project.images_urls && project.images_urls.length > 1 ? (
+    {optimizedCarouselUrls && optimizedCarouselUrls.length > 1 ? (
       <div class="carousel-container" data-carousel>
         <div class="carousel-track">
-          {project.images_urls.map((imgUrl, i) => (
-            <img src={imgUrl} alt={`${project.title} image ${i+1}`} class="project-img-display carousel-slide" />
+          {optimizedCarouselUrls.map((imgUrl, i) => (
+            i === 0 ? (
+              <img src={imgUrl} alt={`${project.title} image ${i+1}`} class="project-img-display carousel-slide" />
+            ) : (
+              <img data-src={imgUrl} alt={`${project.title} image ${i+1}`} class="project-img-display carousel-slide" />
+            )
           ))}
         </div>
         <button class="carousel-btn prev-btn" aria-label="Previous image">‹</button>
         <button class="carousel-btn next-btn" aria-label="Next image">›</button>
         <div class="carousel-dots">
-          {project.images_urls.map((_, i) => (
+          {optimizedCarouselUrls.map((_, i) => (
             <span class={`carousel-dot ${i === 0 ? 'active' : ''}`} data-index={i}></span>
           ))}
         </div>
       </div>
-    ) : project.images_urls && project.images_urls.length === 1 ? (
-      <img src={project.images_urls[0]} alt={project.title} class="project-img-display" />
-    ) : project.image_url ? (
-      <img src={project.image_url} alt={project.title} class="project-img-display" />
+    ) : optimizedCarouselUrls && optimizedCarouselUrls.length === 1 ? (
+      <img src={optimizedCarouselUrls[0]} alt={project.title} class="project-img-display" />
+    ) : optimizedMainUrl ? (
+      <img src={optimizedMainUrl} alt={project.title} class="project-img-display" />
     ) : (
       <div class="project-placeholder-gradient">
         <span class="placeholder-icon">🚀</span>
@@ -51,15 +97,15 @@ const initials = project.title.split(' ').map(w => w[0]).join('').slice(0, 2).to
       </div>
     )}
     
-    {(project.live_url || project.github_url) && (
+    {(formattedLiveUrl || formattedGithubUrl) && (
       <div class="project-links-row" style="display: none;">
-        {project.live_url && (
-          <a href={project.live_url} target="_blank" rel="noopener noreferrer" class="proj-link-item">
+        {formattedLiveUrl && (
+          <a href={formattedLiveUrl} target="_blank" rel="noopener noreferrer" class="proj-link-item">
             Demo
           </a>
         )}
-        {project.github_url && (
-          <a href={project.github_url} target="_blank" rel="noopener noreferrer" class="proj-link-item">
+        {formattedGithubUrl && (
+          <a href={formattedGithubUrl} target="_blank" rel="noopener noreferrer" class="proj-link-item">
             GitHub
           </a>
         )}
@@ -281,7 +327,20 @@ const initials = project.title.split(' ').map(w => w[0]).join('').slice(0, 2).to
       let currentIndex = 0;
       let autoPlayInterval: number;
       
+      const loadLazyImages = () => {
+        slides.forEach(slide => {
+          const img = slide as HTMLImageElement;
+          if (img.dataset.src) {
+            img.src = img.dataset.src;
+            img.removeAttribute('data-src');
+          }
+        });
+      };
+      
       const updateCarousel = () => {
+        if (currentIndex > 0) {
+          loadLazyImages();
+        }
         track.style.transform = `translateX(-${currentIndex * 100}%)`;
         dots.forEach((dot, idx) => {
           dot.classList.toggle('active', idx === currentIndex);
@@ -309,24 +368,31 @@ const initials = project.title.split(' ').map(w => w[0]).join('').slice(0, 2).to
       
       nextBtn?.addEventListener('click', (e) => {
         e.preventDefault(); e.stopPropagation();
+        loadLazyImages();
         nextSlide(); startAutoPlay();
       });
       
       prevBtn?.addEventListener('click', (e) => {
         e.preventDefault(); e.stopPropagation();
+        loadLazyImages();
         prevSlide(); startAutoPlay();
       });
       
       dots.forEach((dot, idx) => {
         dot.addEventListener('click', (e) => {
           e.preventDefault(); e.stopPropagation();
+          loadLazyImages();
           currentIndex = idx;
           updateCarousel(); startAutoPlay();
         });
       });
 
-      carousel.addEventListener('mouseenter', stopAutoPlay);
+      carousel.addEventListener('mouseenter', () => {
+        loadLazyImages();
+        stopAutoPlay();
+      });
       carousel.addEventListener('mouseleave', startAutoPlay);
+      carousel.addEventListener('touchstart', loadLazyImages, { passive: true });
 
       startAutoPlay();
     });

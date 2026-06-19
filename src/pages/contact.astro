@@ -3,9 +3,13 @@ import Layout from '../layouts/Layout.astro';
 import KineticTrails from '../components/contact/KineticTrails.astro';
 import FloatingShapes from '../components/contact/FloatingShapes.astro';
 import ContactForm from '../components/contact/ContactForm.astro';
+import { useTranslations } from '../i18n';
+
+const lang = Astro.locals.lang;
+const t = useTranslations(lang);
 ---
 
-<Layout title="Contacto">
+<Layout title={t.contact.metaTitle}>
   <div class="starfield"></div>
   <div class="nebula-glow nebula-purple"></div>
   <div class="nebula-glow nebula-cyan"></div>
@@ -18,8 +22,8 @@ import ContactForm from '../components/contact/ContactForm.astro';
 
   <section class="contact-section container">
     <div class="contact-header reveal">
-      <h1 class="glow-title">GET IN TOUCH</h1>
-      <p class="glow-subtitle">Let's Collaborate</p>
+      <h1 class="glow-title">{t.contact.title}</h1>
+      <p class="glow-subtitle">{t.contact.subtitle}</p>
     </div>
 
     <ContactForm />

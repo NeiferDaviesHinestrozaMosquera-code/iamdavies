@@ -1,11 +1,15 @@
 ---
 import type { Trajectory } from '../../lib/supabase';
+import { useTranslations } from '../../i18n';
+import type { Lang } from '../../i18n';
 
 interface Props {
   trajectory: Trajectory[];
+  lang: Lang;
 }
 
-const { trajectory = [] } = Astro.props;
+const { trajectory = [], lang } = Astro.props;
+const t = useTranslations(lang);
 
 const pulseClasses = ['cyan-pulse', 'purple-pulse', 'pink-pulse'];
 const delayClasses = ['delay-1', 'delay-2', 'delay-3', 'delay-4'];
@@ -28,7 +32,7 @@ const delayClasses = ['delay-1', 'delay-2', 'delay-3', 'delay-4'];
     })
   ) : (
     <div class="trajectory-item glass reveal">
-      <p>No se cargó información de trayectoria laboral.</p>
+      <p>{t.about.noTrajectory}</p>
     </div>
   )}
 </div>

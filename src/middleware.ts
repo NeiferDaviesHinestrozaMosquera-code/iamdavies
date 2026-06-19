@@ -1,9 +1,13 @@
 import { defineMiddleware } from "astro:middleware";
 import { supabase } from "./lib/supabase";
+import { getLang } from "./i18n";
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const { url, redirect, cookies, request } = context;
   const pathname = url.pathname;
+
+  // ── Language preference ──
+  context.locals.lang = getLang(cookies);
   
   const isAdminPage = pathname.startsWith('/admin');
   const isLoginPage = pathname === '/admin/login' || pathname === '/admin/login/';
@@ -65,5 +69,31 @@ export const onRequest = defineMiddleware(async (context, next) => {
     });
   }
 
-  return next();
+  const response = await next();
+
+  // ── Security Headers ──
+  response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set('X-XSS-Protection', '1; mode=block');
+
+  // Content Security Policy (CSP)
+  const csp = [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "img-src 'self' data: blob: https://qugowwsfwjdaxjbsdbfy.supabase.co https://*.supabase.co https://vercel.com https://*.vercel.app",
+    "font-src 'self' data: https://fonts.gstatic.com",
+    "connect-src 'self' https://qugowwsfwjdaxjbsdbfy.supabase.co https://*.supabase.co wss://*.supabase.co https://vercel.live",
+    "frame-src 'self' https://vercel.live",
+    "frame-ancestors 'none'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'"
+  ].join('; ');
+  
+  response.headers.set('Content-Security-Policy', csp);
+
+  return response;
 });

@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import CategoryFilters from '../components/projects/CategoryFilters.astro';
 import ProjectCard from '../components/projects/ProjectCard.astro';
 import ProjectModal from '../components/projects/ProjectModal.astro';
+import { useTranslations } from '../i18n';
 
 // Fetch published projects from Supabase
 const { data: projects = [], error } = await supabase
@@ -16,10 +17,21 @@ if (error) {
   console.error('Error fetching projects from Supabase:', error);
 }
 
+const lang = Astro.locals.lang;
+const t = useTranslations(lang);
+
 // Extract unique categories dynamically
 const categories = Array.from(new Set((projects || []).map(p => p.category))).filter(Boolean);
 
-const description = "Explora mi portafolio de proyectos de ingeniería de software, interfaces web interactivas, desarrollo frontend y diseño de producto digital.";
+const formatUrl = (url: string | null) => {
+  if (!url) return undefined;
+  const trimmed = url.trim();
+  if (!trimmed) return undefined;
+  if (/^(https?:\/\/|mailto:|tel:|javascript:)/i.test(trimmed)) {
+    return trimmed;
+  }
+  return `https://${trimmed}`;
+};
 
 const listItems = (projects || []).map((p, idx) => ({
   "@type": "ListItem",
@@ -28,7 +40,7 @@ const listItems = (projects || []).map((p, idx) => ({
     "@type": "CreativeWork",
     "name": p.title,
     "description": p.description,
-    "url": p.live_url || p.github_url || undefined,
+    "url": formatUrl(p.live_url) || formatUrl(p.github_url),
     "image": p.image_url || undefined
   }
 }));
@@ -36,22 +48,22 @@ const listItems = (projects || []).map((p, idx) => ({
 const schema = {
   "@context": "https://schema.org",
   "@type": "ItemList",
-  "name": "Proyectos de Dev Davies",
-  "description": description,
+  "name": t.projects.metaTitle,
+  "description": t.projects.metaDescription,
   "numberOfItems": projects?.length || 0,
   "itemListElement": listItems
 };
 ---
 
-<Layout title="Proyectos Creativos" description={description} schema={schema}>
+<Layout title={t.projects.metaTitle} description={t.projects.metaDescription} schema={schema}>
   <div class="starfield"></div>
   <div class="nebula-glow nebula-purple"></div>
   <div class="nebula-glow nebula-cyan"></div>
 
   <section class="projects-section container">
     <div class="header-content reveal">
-      <h1 class="page-title"><span class="gradient-text">/</span> Proyectos</h1>
-      <p class="subtitle">Explora mi portafolio de ingeniería de software, interfaces inmersivas e identidad de marca.</p>
+      <h1 class="page-title"><span class="gradient-text">/</span> {t.projects.title}</h1>
+      <p class="subtitle">{t.projects.subtitle}</p>
     </div>
 
     <!-- Category Filters -->
@@ -65,14 +77,14 @@ const schema = {
         ))
       ) : (
         <div class="no-projects-msg glass reveal">
-          <p>No se encontraron proyectos publicados en este momento.</p>
+          <p>{t.projects.noProjects}</p>
         </div>
       )}
     </div>
   </section>
 
   <!-- Project Details Modal -->
-  <ProjectModal />
+  <ProjectModal lang={lang} />
 </Layout>
 
 <style>

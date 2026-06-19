@@ -1,14 +1,21 @@
 ---
+import { useTranslations } from '../i18n';
+import type { Lang } from '../i18n';
+
 interface Props {
   availableForHire: boolean;
   logoText: string;
+  lang: Lang;
 }
 
-const { availableForHire, logoText } = Astro.props;
+const { availableForHire, logoText, lang } = Astro.props;
+const t = useTranslations(lang);
 
 const pathname = new URL(Astro.request.url).pathname;
 // Normalize path to handle root and trailing slashes
 const currentPath = pathname === "/" ? "" : pathname.replace(/\/$/, "");
+
+const otherLang = lang === 'es' ? 'en' : 'es';
 ---
 <nav class="navbar glass">
   <div class="nav-container">
@@ -17,34 +24,55 @@ const currentPath = pathname === "/" ? "" : pathname.replace(/\/$/, "");
       {availableForHire && (
         <span class="hire-badge">
           <span class="pulse-dot"></span>
-          Disponible para trabajar
+          {t.nav.availableForHire}
         </span>
       )}
     </a>
     
     <div class="nav-links">
-      <a href="/" class={`nav-link ${currentPath === "" ? "active" : ""}`}>Inicio</a>
-      <a href="/about" class={`nav-link ${currentPath === "/about" ? "active" : ""}`}>Sobre Mí / CV</a>
-      <a href="/projects" class={`nav-link ${currentPath === "/projects" ? "active" : ""}`}>Proyectos</a>
-      <a href="/blog" class={`nav-link ${currentPath.startsWith("/blog") ? "active" : ""}`}>Blog</a>
-      <a href="/contact" class={`nav-link nav-btn glow-effect ${currentPath === "/contact" ? "active" : ""}`}>Contacto</a>
+      <a href="/" class={`nav-link ${currentPath === "" ? "active" : ""}`}>{t.nav.home}</a>
+      <a href="/about" class={`nav-link ${currentPath === "/about" ? "active" : ""}`}>{t.nav.about}</a>
+      <a href="/projects" class={`nav-link ${currentPath === "/projects" ? "active" : ""}`}>{t.nav.projects}</a>
+      <a href="/blog" class={`nav-link ${currentPath.startsWith("/blog") ? "active" : ""}`}>{t.nav.blog}</a>
+      <a href="/contact" class={`nav-link nav-btn glow-effect ${currentPath === "/contact" ? "active" : ""}`}>{t.nav.contact}</a>
+
+      <!-- Language Toggle (Desktop) -->
+      <form method="POST" action="/api/set-lang" class="lang-form">
+        <input type="hidden" name="lang" value={otherLang} />
+        <button type="submit" class="lang-toggle" aria-label={`Switch to ${otherLang.toUpperCase()}`}>
+          <span class={lang === 'es' ? 'lang-active' : 'lang-inactive'}>ES</span>
+          <span class="lang-sep">|</span>
+          <span class={lang === 'en' ? 'lang-active' : 'lang-inactive'}>EN</span>
+        </button>
+      </form>
     </div>
 
-    <!-- Mobile Menu Trigger -->
-    <button class="mobile-menu-btn" aria-label="Toggle Menu">
-      <span class="bar bar-1"></span>
-      <span class="bar bar-2"></span>
-      <span class="bar bar-3"></span>
-    </button>
+    <!-- Mobile Right Side -->
+    <div class="mobile-right">
+      <!-- Mobile Language Toggle -->
+      <form method="POST" action="/api/set-lang" class="lang-form">
+        <input type="hidden" name="lang" value={otherLang} />
+        <button type="submit" class="lang-toggle lang-toggle-mobile" aria-label={`Switch to ${otherLang.toUpperCase()}`}>
+          <span class={lang === 'es' ? 'lang-active' : 'lang-inactive'}>ES</span>
+          <span class="lang-sep">|</span>
+          <span class={lang === 'en' ? 'lang-active' : 'lang-inactive'}>EN</span>
+        </button>
+      </form>
+      <button class="mobile-menu-btn" aria-label="Toggle Menu">
+        <span class="bar bar-1"></span>
+        <span class="bar bar-2"></span>
+        <span class="bar bar-3"></span>
+      </button>
+    </div>
   </div>
 
   <!-- Mobile Dropdown Navigation -->
   <div class="mobile-nav glass">
-    <a href="/" class={`mobile-link ${currentPath === "" ? "active" : ""}`}>Inicio</a>
-    <a href="/about" class={`mobile-link ${currentPath === "/about" ? "active" : ""}`}>Sobre Mí / CV</a>
-    <a href="/projects" class={`mobile-link ${currentPath === "/projects" ? "active" : ""}`}>Proyectos</a>
-    <a href="/blog" class={`mobile-link ${currentPath.startsWith("/blog") ? "active" : ""}`}>Blog</a>
-    <a href="/contact" class={`mobile-link mobile-btn glow-effect ${currentPath === "/contact" ? "active" : ""}`}>Contacto</a>
+    <a href="/" class={`mobile-link ${currentPath === "" ? "active" : ""}`}>{t.nav.home}</a>
+    <a href="/about" class={`mobile-link ${currentPath === "/about" ? "active" : ""}`}>{t.nav.about}</a>
+    <a href="/projects" class={`mobile-link ${currentPath === "/projects" ? "active" : ""}`}>{t.nav.projects}</a>
+    <a href="/blog" class={`mobile-link ${currentPath.startsWith("/blog") ? "active" : ""}`}>{t.nav.blog}</a>
+    <a href="/contact" class={`mobile-link mobile-btn glow-effect ${currentPath === "/contact" ? "active" : ""}`}>{t.nav.contact}</a>
   </div>
 </nav>
 
@@ -164,9 +192,60 @@ const currentPath = pathname === "/" ? "" : pathname.replace(/\/$/, "");
     border-color: var(--accent-cyan);
   }
 
+  /* ── Language Toggle ── */
+  .lang-form {
+    display: flex;
+    align-items: center;
+  }
+
+  .lang-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 100px;
+    padding: 0.3rem 0.75rem;
+    cursor: pointer;
+    transition: border-color var(--transition-fast), background var(--transition-fast);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+  }
+
+  .lang-toggle:hover {
+    border-color: var(--accent-cyan);
+    background: rgba(6, 182, 212, 0.08);
+  }
+
+  .lang-active {
+    color: var(--accent-cyan);
+    text-shadow: 0 0 8px rgba(6, 182, 212, 0.6);
+  }
+
+  .lang-inactive {
+    color: rgba(255, 255, 255, 0.35);
+  }
+
+  .lang-sep {
+    color: rgba(255, 255, 255, 0.2);
+  }
+
   /* Mobile Styles */
-  .mobile-menu-btn {
+  .mobile-right {
     display: none;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .lang-toggle-mobile {
+    font-size: 0.72rem;
+    padding: 0.25rem 0.6rem;
+  }
+
+  .mobile-menu-btn {
+    display: flex;
     flex-direction: column;
     gap: 5px;
     background: none;
@@ -219,7 +298,7 @@ const currentPath = pathname === "/" ? "" : pathname.replace(/\/$/, "");
   }
 
   .mobile-link {
-    color: var(--text-primary); /* Force white text */
+    color: var(--text-primary);
     text-decoration: none;
     font-size: 1.1rem;
     font-weight: 500;
@@ -248,7 +327,7 @@ const currentPath = pathname === "/" ? "" : pathname.replace(/\/$/, "");
       display: none;
     }
     
-    .mobile-menu-btn {
+    .mobile-right {
       display: flex;
     }
   }

@@ -1,9 +1,14 @@
 ---
+import { useTranslations } from '../../i18n';
+import type { Lang } from '../../i18n';
+
 interface Props {
   education: any[];
+  lang: Lang;
 }
 
-const { education = [] } = Astro.props;
+const { education = [], lang } = Astro.props;
+const t = useTranslations(lang);
 
 const pulseClasses = ['cyan-pulse', 'purple-pulse', 'pink-pulse'];
 const delayClasses = ['delay-1', 'delay-2', 'delay-3', 'delay-4'];
@@ -26,7 +31,7 @@ const delayClasses = ['delay-1', 'delay-2', 'delay-3', 'delay-4'];
     })
   ) : (
     <div class="trajectory-item glass reveal">
-      <p>No se cargó información de educación.</p>
+      <p>{t.about.noEducation}</p>
     </div>
   )}
 </div>

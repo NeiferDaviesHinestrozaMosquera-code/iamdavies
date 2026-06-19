@@ -1,6 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import { supabase } from '../lib/supabase';
+import { useTranslations } from '../i18n';
 
 // Fetch site settings from Supabase
 const { data: settings } = await supabase
@@ -13,8 +14,11 @@ const { data: socials = [] } = await supabase
   .select('url')
   .order('order_index', { ascending: true });
 
+const lang = Astro.locals.lang;
+const t = useTranslations(lang);
+
 const bio = settings?.bio || 'Explorando Profundidad y Dimensión';
-const roleTitle = settings?.role_title || 'Portafolio Creativo Inmersivo';
+const roleTitle = settings?.role_title || t.index.title;
 
 const sameAsUrls = (socials || []).map(s => s.url).filter(Boolean);
 const siteUrl = Astro.site || Astro.url.origin;
@@ -30,7 +34,7 @@ const schema = {
 };
 ---
 
-<Layout title="Portafolio Creativo Inmersivo" description={bio} schema={schema}>
+<Layout title={t.index.title} description={bio} schema={schema}>
   <div class="starfield"></div>
   <div class="nebula-glow nebula-purple"></div>
   <div class="nebula-glow nebula-cyan"></div>
@@ -40,7 +44,7 @@ const schema = {
     <!-- Left Button -->
     <div class="btn-wrap left-btn reveal-left delay-1">
       <a href="/projects" class="hero-btn glow-effect">
-        <span>VER PROYECTOS</span>
+        <span>{t.index.viewProjects}</span>
       </a>
     </div>
 
@@ -100,7 +104,7 @@ const schema = {
     <!-- Right Button -->
     <div class="btn-wrap right-btn reveal-right delay-2">
       <a href="/about" class="hero-btn glow-effect">
-        <span>SOBRE MÍ</span>
+        <span>{t.index.aboutMe}</span>
       </a>
     </div>
 

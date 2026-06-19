@@ -4,6 +4,7 @@ import Navbar from '../components/Navbar.astro';
 import Footer from '../components/Footer.astro';
 import { ClientRouter } from 'astro:transitions';
 import { supabase } from '../lib/supabase';
+import { useTranslations } from '../i18n';
 
 interface Props {
 	title?: string;
@@ -18,6 +19,10 @@ const {
 	image,
 	schema
 } = Astro.props;
+
+// ── Language ──
+const lang = Astro.locals.lang;
+const t = useTranslations(lang);
 
 // ── Single consolidated query for all layout/navbar/footer needs ──
 const { data: settings } = await supabase
@@ -38,16 +43,35 @@ const isMaintenancePage = pathname === '/maintenance';
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site || Astro.url.origin).href;
 const absoluteImageUrl = new URL(image || settings?.about_image_url || '/portrait.png', Astro.site || Astro.url.origin).href;
+
+// ── Base JSON-LD Person — always present on every page ──
+const sameAsUrls = (socials || []).map((s: any) => s.url).filter(Boolean);
+const siteUrl = (Astro.site || Astro.url.origin).toString();
+const personSchema = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "Dev Davies",
+  "url": siteUrl,
+  "sameAs": sameAsUrls,
+  "jobTitle": settings?.logo_text ? undefined : "Web Developer",
+  "image": new URL(settings?.about_image_url || '/portrait.png', siteUrl).href,
+};
+
+const ogLocale = lang === 'en' ? 'en_US' : 'es_ES';
 ---
 
 <!doctype html>
-<html lang="es">
+<html lang={lang}>
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<link rel="icon" href="/favicon.ico" />
 		<meta name="generator" content={Astro.generator} />
+		
+		<!-- Preconnect to remote assets -->
+		<link rel="preconnect" href="https://qugowwsfwjdaxjbsdbfy.supabase.co" crossorigin />
+		<link rel="dns-prefetch" href="https://qugowwsfwjdaxjbsdbfy.supabase.co" />
 		
 		<!-- SEO Meta Tags -->
 		<title>{title}</title>
@@ -62,7 +86,7 @@ const absoluteImageUrl = new URL(image || settings?.about_image_url || '/portrai
 		<meta property="og:description" content={description} />
 		<meta property="og:image" content={absoluteImageUrl} />
 		<meta property="og:site_name" content={settings?.logo_text || "iamdavies."} />
-		<meta property="og:locale" content="es_ES" />
+		<meta property="og:locale" content={ogLocale} />
 		
 		<!-- Twitter -->
 		<meta property="twitter:card" content="summary_large_image" />
@@ -71,7 +95,9 @@ const absoluteImageUrl = new URL(image || settings?.about_image_url || '/portrai
 		<meta property="twitter:description" content={description} />
 		<meta property="twitter:image" content={absoluteImageUrl} />
 
-		<!-- JSON-LD Structured Data -->
+		<!-- JSON-LD Structured Data: Person (global, every page) -->
+		<script type="application/ld+json" set:html={JSON.stringify(personSchema)} />
+		<!-- JSON-LD Structured Data: page-specific schema -->
 		{schema && <script type="application/ld+json" set:html={JSON.stringify(schema)} />}
 
 		<!-- View Transitions API for smooth page changes -->
@@ -85,11 +111,11 @@ const absoluteImageUrl = new URL(image || settings?.about_image_url || '/portrai
 			<div class="cursor-trail-container" id="cursor-trail"></div>
 		)}
 
-		<Navbar availableForHire={settings?.available_for_hire ?? true} logoText={settings?.logo_text || 'iamdavies.'} />
+		<Navbar availableForHire={settings?.available_for_hire ?? true} logoText={settings?.logo_text || 'iamdavies.'} lang={lang} />
 		<main>
 			<slot />
 		</main>
-		<Footer logoText={settings?.logo_text || 'iamdavies.'} socials={socials} />
+		<Footer logoText={settings?.logo_text || 'iamdavies.'} socials={socials} lang={lang} />
 	</body>
 </html>
 

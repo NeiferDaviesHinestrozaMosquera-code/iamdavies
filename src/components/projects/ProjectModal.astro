@@ -1,7 +1,14 @@
 ---
+import type { Lang } from '../../i18n';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
 ---
 
-<div class="project-modal-backdrop" id="project-modal">
+<div class="project-modal-backdrop" id="project-modal" data-lang={lang}>
   <div class="project-modal-container glass">
     <button class="modal-close-btn" id="project-modal-close" aria-label="Cerrar modal">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -225,6 +232,19 @@
       
       let currentIndex = 0;
       let autoPlayInterval: number;
+
+      const loadLazyImages = () => {
+        slides.forEach(slide => {
+          const img = slide as HTMLImageElement;
+          if (img.dataset.src) {
+            img.src = img.dataset.src;
+            img.removeAttribute('data-src');
+          }
+        });
+      };
+
+      // Load all images immediately inside the modal since the user is viewing this project details
+      loadLazyImages();
       
       const updateCarousel = () => {
         track.style.transform = `translateX(-${currentIndex * 100}%)`;
@@ -322,11 +342,19 @@
         const liveLink = card.querySelector('a[href]:not([href*="github"])') as HTMLAnchorElement;
         const ghLink = card.querySelector('a[href*="github"]') as HTMLAnchorElement;
 
+        const lang = modalBackdrop.getAttribute('data-lang') === 'en' ? 'en' : 'es';
+        const txtVerProyecto = lang === 'en' ? 'View Project' : 'Ver Proyecto';
+        const txtCodigoFuente = lang === 'en' ? 'Source Code' : 'Código Fuente';
+
         if (liveLink) {
-          newLinksHtml += `<a href="${liveLink.href}" target="_blank" rel="noopener noreferrer" class="modal-btn primary">Ver Proyecto</a>`;
+          const href = liveLink.getAttribute('href') || '';
+          const formattedHref = /^(https?:\/\/|mailto:|tel:|javascript:)/i.test(href) ? href : `https://${href}`;
+          newLinksHtml += `<a href="${formattedHref}" target="_blank" rel="noopener noreferrer" class="modal-btn primary">${txtVerProyecto}</a>`;
         }
         if (ghLink) {
-          newLinksHtml += `<a href="${ghLink.href}" target="_blank" rel="noopener noreferrer" class="modal-btn secondary">Código Fuente</a>`;
+          const href = ghLink.getAttribute('href') || '';
+          const formattedHref = /^(https?:\/\/|mailto:|tel:|javascript:)/i.test(href) ? href : `https://${href}`;
+          newLinksHtml += `<a href="${formattedHref}" target="_blank" rel="noopener noreferrer" class="modal-btn secondary">${txtCodigoFuente}</a>`;
         }
         mLinks.innerHTML = newLinksHtml;
         mVisual.innerHTML = visualHtml;

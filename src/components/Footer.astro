@@ -1,12 +1,16 @@
 ---
 import type { SocialNetwork } from '../lib/supabase';
+import { useTranslations } from '../i18n';
+import type { Lang } from '../i18n';
 
 interface Props {
   logoText: string;
   socials: SocialNetwork[];
+  lang: Lang;
 }
 
-const { logoText, socials } = Astro.props;
+const { logoText, socials, lang } = Astro.props;
+const t = useTranslations(lang);
 
 const currentYear = new Date().getFullYear();
 ---
@@ -14,7 +18,7 @@ const currentYear = new Date().getFullYear();
   <div class="container footer-content">
     <div class="footer-left">
       <a href="/" class="logo-link"><span class="gradient-text">{logoText}</span></a>
-      <p class="copy">&copy; {currentYear} Todos los derechos reservados.</p>
+      <p class="copy">&copy; {currentYear} {t.footer.rights}</p>
     </div>
     
     <div class="footer-links">

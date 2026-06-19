@@ -5,12 +5,17 @@ import ServiceCard from '../components/about/ServiceCard.astro';
 import TrajectoryTimeline from '../components/about/TrajectoryTimeline.astro';
 import EducationTimeline from '../components/about/EducationTimeline.astro';
 import CvSidebar from '../components/about/CvSidebar.astro';
+import { useTranslations } from '../i18n';
+import { Image } from 'astro:assets';
 
 // Fetch settings
 const { data: settings } = await supabase
   .from('site_settings')
   .select('about_image_url, about_text, cv_pdf_url, skills, tools, languages, education, cv_download_enabled')
   .single();
+
+const lang = Astro.locals.lang;
+const t = useTranslations(lang);
 
 const aboutText = settings?.about_text || 'Creación de interfaces estéticas, interactivas y centradas en el usuario, optimizando flujos de experiencia e identidad visual digital.';
 const aboutImageUrl = settings?.about_image_url || '/portrait.png';
@@ -46,7 +51,7 @@ const schema = {
 };
 ---
 
-<Layout title="Sobre Mí" description={aboutText} image={aboutImageUrl} schema={schema}>
+<Layout title={t.about.metaTitle} description={aboutText} image={aboutImageUrl} schema={schema}>
   <div class="starfield"></div>
   <div class="nebula-glow nebula-purple"></div>
   <div class="nebula-glow nebula-cyan"></div>
@@ -87,7 +92,7 @@ const schema = {
       <!-- Left Side: Profile Image Container -->
       <div class="profile-image-container reveal-left">
         <div class="profile-image-wrapper glass">
-          <img src={aboutImageUrl} alt="Davies Portrait" class="profile-img" />
+          <Image src={aboutImageUrl} alt="Davies Portrait" class="profile-img" width={500} height={500} loading="eager" />
           <div class="profile-glow"></div>
         </div>
       </div>
@@ -95,7 +100,7 @@ const schema = {
       <!-- Right Side: Text & Service Cards -->
       <div class="profile-info-container reveal-right">
         <div style="display:flex; justify-content:space-between; align-items:flex-end; gap: 1rem; flex-wrap: wrap;">
-          <h1 class="section-title-alt">Sobre Mí</h1>
+          <h1 class="section-title-alt">{t.about.title}</h1>
           
           {cvDownloadEnabled && (
             <a href={cvPdfUrl || '#'} target={cvPdfUrl ? "_blank" : "_self"} onclick={!cvPdfUrl ? "window.print()" : ""} class="download-btn glow-effect reveal" style="text-decoration:none;">
@@ -104,7 +109,7 @@ const schema = {
                 <polyline points="7 10 12 15 17 10"></polyline>
                 <line x1="12" y1="15" x2="12" y2="3"></line>
               </svg>
-              Descargar CV
+              {t.about.downloadCv}
             </a>
           )}
         </div>
@@ -115,10 +120,10 @@ const schema = {
           </div>
 
           <!-- Card 1: UI/UX Design -->
-          <ServiceCard title="UI/UX Design" description="Creación de interfaces estéticas, interactivas y centradas en el usuario, optimizando flujos de experiencia e identidad visual digital." theme="cyan" delayClass="delay-2" />
+          <ServiceCard title={t.about.serviceUiTitle} description={t.about.serviceUiDesc} theme="cyan" delayClass="delay-2" />
 
           <!-- Card 2: Frontend Development -->
-          <ServiceCard title="Frontend Development" description="Desarrollo de lógica cliente limpia utilizando frameworks reactivos rápidos. Especialista en optimizaciones de Core Web Vitals." theme="pink" delayClass="delay-3" />
+          <ServiceCard title={t.about.serviceFrontendTitle} description={t.about.serviceFrontendDesc} theme="pink" delayClass="delay-3" />
         </div>
       </div>
     </div>
@@ -127,19 +132,19 @@ const schema = {
     <div class="unified-cv-grid">
       <!-- Career Timeline Section -->
       <div class="timeline-container">
-        <h2 class="timeline-title reveal"><span class="gradient-text">/</span> Mi Trayectoria</h2>
-        <TrajectoryTimeline trajectory={trajectory} />
+        <h2 class="timeline-title reveal"><span class="gradient-text">/</span> {t.about.trajectory}</h2>
+        <TrajectoryTimeline trajectory={trajectory} lang={lang} />
 
         {education && education.length > 0 && (
           <div style="margin-top: 4rem;">
-            <h2 class="timeline-title reveal"><span class="gradient-text">/</span> Educación</h2>
-            <EducationTimeline education={education} />
+            <h2 class="timeline-title reveal"><span class="gradient-text">/</span> {t.about.education}</h2>
+            <EducationTimeline education={education} lang={lang} />
           </div>
         )}
       </div>
 
       <!-- CV Sidebar Info -->
-      <CvSidebar skills={skills} tools={tools} languages={languages} />
+      <CvSidebar skills={skills} tools={tools} languages={languages} lang={lang} />
     </div>
   </section>
 </Layout>
