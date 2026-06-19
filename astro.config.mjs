@@ -6,7 +6,9 @@ import vercel from '@astrojs/vercel';
 export default defineConfig({
   site: process.env.PUBLIC_SITE_URL || 'https://iamdavies.vercel.app',
   output: 'server',
-  adapter: vercel(),
+  adapter: vercel({
+    imageService: true,
+  }),
   image: {
     domains: ['qugowwsfwjdaxjbsdbfy.supabase.co'],
   }
