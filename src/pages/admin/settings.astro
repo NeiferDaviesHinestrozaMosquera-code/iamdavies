@@ -557,6 +557,25 @@ const { data: trajectoryList = [] } = await supabase
         (document.getElementById('s-bio') as HTMLTextAreaElement).value = s.bio || '';
         (document.getElementById('s-about-text') as HTMLTextAreaElement).value = s.about_text || '';
 
+        // ── Hero Section fields (new) ──
+        const heroGreetingEl   = document.getElementById('s-hero-greeting')    as HTMLInputElement   | null;
+        const heroNameEl       = document.getElementById('s-hero-name')        as HTMLInputElement   | null;
+        const heroSpecialtyEl  = document.getElementById('s-hero-specialty')   as HTMLInputElement   | null;
+        const heroDescEl       = document.getElementById('s-hero-description') as HTMLTextAreaElement | null;
+        const stackEl          = document.getElementById('s-stack')            as HTMLTextAreaElement | null;
+        const statsYearsEl     = document.getElementById('s-stats-years')      as HTMLInputElement   | null;
+        const statsProjectsEl  = document.getElementById('s-stats-projects')   as HTMLInputElement   | null;
+        const statsClientsEl   = document.getElementById('s-stats-clients')    as HTMLInputElement   | null;
+
+        if (heroGreetingEl)  heroGreetingEl.value  = s.hero_greeting    || 'Hola, soy';
+        if (heroNameEl)      heroNameEl.value      = s.hero_name        || 'Davies';
+        if (heroSpecialtyEl) heroSpecialtyEl.value = s.hero_specialty   || '';
+        if (heroDescEl)      heroDescEl.value      = s.hero_description || '';
+        if (stackEl)         stackEl.value         = (s.stack_technologies || []).join(', ');
+        if (statsYearsEl)    statsYearsEl.value    = String(s.stats_years    ?? 5);
+        if (statsProjectsEl) statsProjectsEl.value = String(s.stats_projects ?? 30);
+        if (statsClientsEl)  statsClientsEl.value  = String(s.stats_clients  ?? 12);
+
         // Setup CV fields
         (document.getElementById('cv-skills') as HTMLTextAreaElement).value = (s.skills || []).join(', ');
         (document.getElementById('cv-tools') as HTMLTextAreaElement).value = (s.tools || []).join(', ');
@@ -663,9 +682,90 @@ const { data: trajectoryList = [] } = await supabase
       if (error) {
         showToast('Error al guardar cambios.', 'error');
       } else {
-        showToast('Cambios generales actualizados.');
+        showToast('Identidad del sitio actualizada.');
       }
     });
+
+    // ── Save Hero Content (greeting, name, specialty, description) ──
+    document.getElementById('hero-content-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const saveBtn = document.getElementById('hero-content-save-btn') as HTMLButtonElement;
+      const btnText = document.getElementById('hero-content-btn-text')!;
+      const spinner = document.getElementById('hero-content-spinner')!;
+
+      saveBtn.disabled = true;
+      btnText.style.display = 'none';
+      spinner.style.display = 'flex';
+
+      const heroGreeting    = (document.getElementById('s-hero-greeting')    as HTMLInputElement).value.trim();
+      const heroName        = (document.getElementById('s-hero-name')        as HTMLInputElement).value.trim();
+      const heroSpecialty   = (document.getElementById('s-hero-specialty')   as HTMLInputElement).value.trim();
+      const heroDescription = (document.getElementById('s-hero-description') as HTMLTextAreaElement).value.trim();
+
+      const { error } = await supabase
+        .from('site_settings')
+        .update({
+          hero_greeting:    heroGreeting,
+          hero_name:        heroName,
+          hero_specialty:   heroSpecialty,
+          hero_description: heroDescription,
+        })
+        .eq('id', 1);
+
+      saveBtn.disabled = false;
+      btnText.style.display = 'inline';
+      spinner.style.display = 'none';
+
+      if (error) {
+        showToast('Error al guardar el hero.', 'error');
+      } else {
+        showToast('Sección hero actualizada.');
+      }
+    });
+
+    // ── Save Stack & Stats ──
+    document.getElementById('stack-stats-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const saveBtn = document.getElementById('stack-stats-save-btn') as HTMLButtonElement;
+      const btnText = document.getElementById('stack-stats-btn-text')!;
+      const spinner = document.getElementById('stack-stats-spinner')!;
+
+      saveBtn.disabled = true;
+      btnText.style.display = 'none';
+      spinner.style.display = 'flex';
+
+      const stackRaw = (document.getElementById('s-stack') as HTMLTextAreaElement).value;
+      const stackTechs = stackRaw
+        .split(',')
+        .map(t => t.trim())
+        .filter(Boolean);
+
+      const statsYears    = parseInt((document.getElementById('s-stats-years')    as HTMLInputElement).value) || 0;
+      const statsProjects = parseInt((document.getElementById('s-stats-projects') as HTMLInputElement).value) || 0;
+      const statsClients  = parseInt((document.getElementById('s-stats-clients')  as HTMLInputElement).value) || 0;
+
+      const { error } = await supabase
+        .from('site_settings')
+        .update({
+          stack_technologies: stackTechs,
+          stats_years:        statsYears,
+          stats_projects:     statsProjects,
+          stats_clients:      statsClients,
+        })
+        .eq('id', 1);
+
+      saveBtn.disabled = false;
+      btnText.style.display = 'inline';
+      spinner.style.display = 'none';
+
+      if (error) {
+        showToast('Error al guardar stack y estadísticas.', 'error');
+      } else {
+        showToast('Stack y estadísticas actualizados.');
+      }
+    });
+
+
 
     // ── Save About Me Profile ──
     document.getElementById('about-form')!.addEventListener('submit', async (e) => {

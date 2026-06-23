@@ -1,7 +1,8 @@
 ---
 /**
  * GeneralTab.astro
- * Settings tab for site identity (logo, hero title) and feature toggles.
+ * Settings tab for site identity (logo, hero title), hero section content,
+ * tech stack, statistics, and feature toggles.
  */
 import type { SiteSettings } from '../../../../lib/supabase';
 
@@ -10,15 +11,22 @@ interface Props {
 }
 
 const { settings } = Astro.props;
+
+const defaultStack = ['React / Next.js', 'Node.js', 'TypeScript', 'PostgreSQL', 'Astro', 'Docker'];
+const stackValue = (settings?.stack_technologies ?? defaultStack).join(', ');
 ---
 
 <div id="tab-general" class="tab-pane active">
   <div class="settings-grid">
+
+    <!-- ── Left Column ── -->
     <div class="settings-col">
+
+      <!-- Site Identity Card -->
       <div class="settings-card glass">
         <div class="card-header">
-          <h2>Identidad e Inicio</h2>
-          <p>Personaliza el logo textual y el mensaje principal de la web.</p>
+          <h2>Identidad del Sitio</h2>
+          <p>Logo textual y configuración general de la web.</p>
         </div>
         <form class="settings-form" id="general-form" novalidate>
           <div class="input-group">
@@ -26,17 +34,99 @@ const { settings } = Astro.props;
             <input type="text" id="s-logo-text" value={settings?.logo_text || ''} placeholder="Ej: iamdavies." required />
           </div>
           <div class="input-group">
-            <label for="s-hero-title">Título del Hero (Inicio)</label>
-            <input type="text" id="s-hero-title" value={settings?.hero_title || ''} placeholder="Ej: PORTAFOLIO CREATIVO INMERSIVO" required />
+            <label for="s-hero-title">Título del Hero (página anterior)</label>
+            <input type="text" id="s-hero-title" value={settings?.hero_title || ''} placeholder="Ej: PORTAFOLIO CREATIVO INMERSIVO" />
           </div>
           <button type="submit" class="save-btn" id="general-save-btn">
-            <span id="general-btn-text">Guardar Cambios</span>
+            <span id="general-btn-text">Guardar Identidad</span>
             <div id="general-spinner" style="display:none;"><div class="spinner"></div></div>
+          </button>
+        </form>
+      </div>
+
+      <!-- Hero Content Card -->
+      <div class="settings-card glass">
+        <div class="card-header">
+          <h2>Sección Hero (Inicio)</h2>
+          <p>Texto de presentación principal que aparece en la portada.</p>
+        </div>
+        <form class="settings-form" id="hero-content-form" novalidate>
+          <div class="input-group">
+            <label for="s-hero-greeting">Saludo</label>
+            <input type="text" id="s-hero-greeting"
+              value={settings?.hero_greeting ?? 'Hola, soy'}
+              placeholder="Ej: Hola, soy" />
+            <small class="field-hint">Texto antes del nombre. Ej: "Hola, soy"</small>
+          </div>
+          <div class="input-group">
+            <label for="s-hero-name">Nombre a mostrar</label>
+            <input type="text" id="s-hero-name"
+              value={settings?.hero_name ?? 'Davies'}
+              placeholder="Ej: Davies" />
+          </div>
+          <div class="input-group">
+            <label for="s-hero-specialty">Especialidad / Subtítulo</label>
+            <input type="text" id="s-hero-specialty"
+              value={settings?.hero_specialty ?? '& UI Engineer'}
+              placeholder="Ej: & UI Engineer" />
+            <small class="field-hint">Aparece debajo del rol (ej: "& UI Engineer")</small>
+          </div>
+          <div class="input-group">
+            <label for="s-hero-description">Descripción del Hero</label>
+            <textarea id="s-hero-description" rows="3"
+              placeholder="Construyo productos digitales rápidos, accesibles y bien diseñados...">{settings?.hero_description ?? ''}</textarea>
+            <small class="field-hint">Párrafo debajo del título en la portada.</small>
+          </div>
+          <button type="submit" class="save-btn" id="hero-content-save-btn">
+            <span id="hero-content-btn-text">Guardar Hero</span>
+            <div id="hero-content-spinner" style="display:none;"><div class="spinner"></div></div>
+          </button>
+        </form>
+      </div>
+
+      <!-- Stack & Stats Card -->
+      <div class="settings-card glass">
+        <div class="card-header">
+          <h2>Stack & Estadísticas</h2>
+          <p>Tecnologías del stack principal y métricas de experiencia.</p>
+        </div>
+        <form class="settings-form" id="stack-stats-form" novalidate>
+          <div class="input-group">
+            <label for="s-stack">Stack Principal (separado por comas)</label>
+            <textarea id="s-stack" rows="3" placeholder="React / Next.js, Node.js, TypeScript, PostgreSQL, Astro, Docker">{stackValue}</textarea>
+            <small class="field-hint">Cada tecnología separada por coma. Se mostrarán en la tarjeta del hero.</small>
+          </div>
+
+          <div class="stats-row">
+            <div class="input-group">
+              <label for="s-stats-years">Años experiencia</label>
+              <input type="number" id="s-stats-years" min="0" max="99"
+                value={settings?.stats_years ?? 5}
+                placeholder="5" />
+            </div>
+            <div class="input-group">
+              <label for="s-stats-projects">Proyectos</label>
+              <input type="number" id="s-stats-projects" min="0"
+                value={settings?.stats_projects ?? 30}
+                placeholder="30" />
+            </div>
+            <div class="input-group">
+              <label for="s-stats-clients">Clientes</label>
+              <input type="number" id="s-stats-clients" min="0"
+                value={settings?.stats_clients ?? 12}
+                placeholder="12" />
+            </div>
+          </div>
+
+          <button type="submit" class="save-btn" id="stack-stats-save-btn">
+            <span id="stack-stats-btn-text">Guardar Stack & Stats</span>
+            <div id="stack-stats-spinner" style="display:none;"><div class="spinner"></div></div>
           </button>
         </form>
       </div>
     </div>
 
+    <!-- ── Right Column ── -->
     <div class="settings-col">
       <div class="settings-card glass">
         <div class="card-header">
@@ -47,7 +137,7 @@ const { settings } = Astro.props;
           <div class="toggle-item">
             <div class="toggle-info">
               <h4>Disponible para contratar</h4>
-              <p>Muestra el banner de disponibilidad en el sitio.</p>
+              <p>Muestra el banner de disponibilidad en la portada.</p>
             </div>
             <label class="switch">
               <input type="checkbox" id="t-available" data-key="available_for_hire" checked={Boolean(settings?.available_for_hire)} />
@@ -92,3 +182,23 @@ const { settings } = Astro.props;
     </div>
   </div>
 </div>
+
+<style>
+  .field-hint {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+  }
+
+  .stats-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1rem;
+  }
+
+  @media (max-width: 600px) {
+    .stats-row {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

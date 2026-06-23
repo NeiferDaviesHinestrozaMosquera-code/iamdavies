@@ -82,6 +82,15 @@ export type SiteSettings = {
   languages: any[];
   education: any[];
   updated_at: string;
+  // Hero section fields
+  hero_greeting: string | null;
+  hero_name: string | null;
+  hero_specialty: string | null;
+  hero_description: string | null;
+  stack_technologies: string[] | null;
+  stats_years: number | null;
+  stats_projects: number | null;
+  stats_clients: number | null;
 };
 
 export type SocialNetwork = {

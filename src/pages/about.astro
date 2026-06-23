@@ -32,13 +32,8 @@ const { data: trajectory = [] } = await supabase
   .select('*')
   .order('order_index', { ascending: true });
 
-// Fetch socials for schema
-const { data: socials = [] } = await supabase
-  .from('social_networks')
-  .select('url')
-  .order('order_index', { ascending: true });
-
-const sameAsUrls = (socials || []).map(s => s.url).filter(Boolean);
+// NOTE: social_networks is already fetched in Layout.astro (global Person JSON-LD).
+// The page-level schema only needs page-specific data; sameAs is already covered globally.
 const schema = {
   "@context": "https://schema.org",
   "@type": "Person",
@@ -46,7 +41,6 @@ const schema = {
   "description": aboutText,
   "image": new URL(aboutImageUrl, Astro.site || Astro.url.origin).href,
   "url": new URL('about', Astro.site || Astro.url.origin).href,
-  "sameAs": sameAsUrls,
   "knowsAbout": [...skills, ...tools]
 };
 ---

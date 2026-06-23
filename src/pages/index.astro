@@ -4,15 +4,11 @@ import { supabase } from '../lib/supabase';
 import { useTranslations } from '../i18n';
 
 // Fetch site settings from Supabase
+// NOTE: social_networks is already fetched in Layout.astro — no need to duplicate it here.
 const { data: settings } = await supabase
   .from('site_settings')
-  .select('bio, role_title')
+  .select('bio, role_title, available_for_hire, cv_pdf_url, cv_download_enabled, hero_greeting, hero_name, hero_specialty, hero_description, stack_technologies, stats_years, stats_projects, stats_clients')
   .single();
-
-const { data: socials = [] } = await supabase
-  .from('social_networks')
-  .select('url')
-  .order('order_index', { ascending: true });
 
 const lang = Astro.locals.lang;
 const t = useTranslations(lang);
@@ -20,18 +16,35 @@ const t = useTranslations(lang);
 const bio = settings?.bio || 'Explorando Profundidad y Dimensión';
 const roleTitle = settings?.role_title || t.index.title;
 
-const sameAsUrls = (socials || []).map(s => s.url).filter(Boolean);
-const siteUrl = Astro.site || Astro.url.origin;
+// Hero content with fallbacks
+const greeting     = settings?.hero_greeting  ?? 'Hola, soy';
+const heroName     = settings?.hero_name      ?? 'Davies';
+const specialty    = settings?.hero_specialty ?? '& Desarrollador de aplicaciones moviles multiplataforma';
+const description  = settings?.hero_description ?? bio;
+const stackTechs   = settings?.stack_technologies?.length
+  ? settings.stack_technologies
+  : ['React / Next.js', 'Node.js', 'TypeScript', 'PostgreSQL', 'Astro', 'Docker'];
+const statsYears    = settings?.stats_years    ?? 5;
+const statsProjects = settings?.stats_projects ?? 30;
+const statsClients  = settings?.stats_clients  ?? 12;
+const isAvailable   = settings?.available_for_hire ?? true;
+const cvUrl         = settings?.cv_pdf_url;
+const cvEnabled     = settings?.cv_download_enabled ?? false;
 
+// Schema: omit sameAs — Layout.astro already emits a full Person JSON-LD with sameAs.
+const siteUrl = Astro.site || Astro.url.origin;
 const schema = {
   "@context": "https://schema.org",
   "@type": "Person",
-  "name": "Dev Davies",
+  "name": heroName,
   "jobTitle": roleTitle,
   "description": bio,
-  "url": siteUrl.toString(),
-  "sameAs": sameAsUrls
+  "url": siteUrl.toString()
 };
+
+// Split stack into 2 columns
+const col1 = stackTechs.filter((_, i) => i % 2 === 0);
+const col2 = stackTechs.filter((_, i) => i % 2 !== 0);
 ---
 
 <Layout title={t.index.title} description={bio} schema={schema}>
@@ -39,20 +52,13 @@ const schema = {
   <div class="nebula-glow nebula-purple"></div>
   <div class="nebula-glow nebula-cyan"></div>
 
-  <!-- Hero Container -->
-  <section class="hero-immersive">
-    <!-- Left Button -->
-    <div class="btn-wrap left-btn reveal-left delay-1">
-      <a href="/projects" class="hero-btn glow-effect">
-        <span>{t.index.viewProjects}</span>
-      </a>
-    </div>
+  <!-- Hero Section -->
+  <section class="hero-section">
 
-    <!-- Center 3D Crystal Visual -->
-    <div class="crystal-stage reveal-scale">
+    <!-- 3D Crystal — Fondo decorativo -->
+    <div class="crystal-bg" aria-hidden="true">
       <div class="crystal-wrapper">
         <div class="crystal-container">
-          <!-- 3D Octahedron Crystal Faces -->
           <!-- Top 4 triangles -->
           <div class="crystal-face face-top-1">
             <svg viewBox="0 0 100 86.6" class="face-svg">
@@ -97,133 +103,187 @@ const schema = {
           </div>
         </div>
       </div>
-      <!-- Glow aura behind the crystal -->
-      <div class="crystal-shadow"></div>
+      <div class="crystal-aura"></div>
     </div>
 
-    <!-- Right Button -->
-    <div class="btn-wrap right-btn reveal-right delay-2">
-      <a href="/about" class="hero-btn glow-effect">
-        <span>{t.index.aboutMe}</span>
-      </a>
-    </div>
+    <!-- Hero Content Grid -->
+    <div class="hero-content">
 
-    <!-- Title and Subtitle at Bottom -->
-    <div class="hero-text-content reveal delay-3">
-      <h1 class="hero-title uppercase">{roleTitle}</h1>
-      <p class="hero-subtitle">{bio}</p>
+      <!-- LEFT: Text Column — above the fold, pre-revealed (no IntersectionObserver needed) -->
+      <div class="hero-left reveal-left in-view">
+
+        <!-- Heading principal -->
+        <h1 class="hero-heading">
+          <span class="greeting">{greeting}</span>
+          <span class="name">{heroName}</span>
+          <span class="role-line gradient-text">{roleTitle}</span>
+          <span class="specialty">{specialty}</span>
+        </h1>
+
+        <!-- Descripción -->
+        <p class="hero-desc">{description}</p>
+
+        <!-- CTAs -->
+        <div class="hero-ctas">
+          <a href="/projects" class="cta-primary glow-effect" id="hero-view-projects">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+            <span>Ver mis proyectos</span>
+          </a>
+          {cvEnabled && cvUrl && (
+            <a href={cvUrl} download class="cta-secondary" id="hero-download-cv" target="_blank" rel="noopener">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              <span>Descargar CV</span>
+            </a>
+          )}
+        </div>
+
+        <!-- Stats -->
+        <div class="hero-stats">
+          <div class="stat-item">
+            <span class="stat-num">{statsYears}<span class="stat-plus">+</span></span>
+            <span class="stat-label">Años de<br>experiencia</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <span class="stat-num">{statsProjects}<span class="stat-plus">+</span></span>
+            <span class="stat-label">Proyectos<br>entregados</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <span class="stat-num">{statsClients}<span class="stat-plus">+</span></span>
+            <span class="stat-label">Clientes<br>satisfechos</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Stack Card — above the fold, pre-revealed -->
+      <div class="hero-right reveal-right in-view">
+        <div class="stack-card glass">
+          <div class="stack-card-header">
+            <span class="stack-label">STACK PRINCIPAL</span>
+          </div>
+
+          <div class="stack-grid">
+            <div class="stack-col">
+              {col1.map((tech, i) => (
+                <div class={`stack-tag ${i === 0 ? 'stack-tag--cyan' : i === 1 ? 'stack-tag--purple' : ''}`}>
+                  <span class="stack-dot"></span>
+                  <span>{tech}</span>
+                </div>
+              ))}
+            </div>
+            <div class="stack-col">
+              {col2.map((tech, i) => (
+                <div class={`stack-tag ${i === 0 ? 'stack-tag--green' : i === 1 ? 'stack-tag--pink' : ''}`}>
+                  <span class="stack-dot"></span>
+                  <span>{tech}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div class="stack-footer">
+            
+            <div class="stack-location">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                <circle cx="12" cy="10" r="3"></circle>
+              </svg>
+              <span>Yopal - Casanare , CO</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
-  <!-- Global SVG definitions for gradients used inside the crystal faces -->
+  <!-- Global SVG definitions for crystal faces -->
   <svg style="width:0; height:0; position:absolute;" width="0" height="0">
     <defs>
       <linearGradient id="face-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="rgba(6, 182, 212, 0.12)"></stop>
-        <stop offset="50%" stop-color="rgba(139, 92, 246, 0.08)"></stop>
-        <stop offset="100%" stop-color="rgba(236, 72, 153, 0.12)"></stop>
+        <stop offset="0%" stop-color="rgba(6, 182, 212, 0.18)"></stop>
+        <stop offset="50%" stop-color="rgba(139, 92, 246, 0.12)"></stop>
+        <stop offset="100%" stop-color="rgba(236, 72, 153, 0.18)"></stop>
       </linearGradient>
       <linearGradient id="stroke-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="rgba(6, 182, 212, 0.7)"></stop>
-        <stop offset="50%" stop-color="rgba(139, 92, 246, 0.5)"></stop>
-        <stop offset="100%" stop-color="rgba(236, 72, 153, 0.7)"></stop>
+        <stop offset="0%" stop-color="rgba(6, 182, 212, 0.6)"></stop>
+        <stop offset="50%" stop-color="rgba(139, 92, 246, 0.45)"></stop>
+        <stop offset="100%" stop-color="rgba(236, 72, 153, 0.6)"></stop>
       </linearGradient>
     </defs>
   </svg>
 </Layout>
 
 <style>
-  .hero-immersive {
-    display: grid;
-    grid-template-columns: 1fr 2fr 1fr;
-    grid-template-rows: 1fr auto;
-    align-items: center;
-    justify-items: center;
-    min-height: calc(100vh - 12rem);
-    padding: 2rem 1.5rem;
+  /* ─── Hero Section ─── */
+  .hero-section {
     position: relative;
+    min-height: calc(100vh - 72px);
+    display: flex;
+    align-items: center;
     overflow: hidden;
+    padding: 4rem 1.5rem 3rem;
     max-width: 1300px;
     margin: 0 auto;
     width: 100%;
   }
 
-  .btn-wrap {
-    z-index: 10;
-  }
-
-  /* Pill-shaped glowing buttons */
-  .hero-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.85rem 2.5rem;
-    font-size: 0.9rem;
-    font-weight: 600;
-    letter-spacing: 0.15em;
-    color: #fff;
-    text-decoration: none;
-    background: rgba(3, 0, 20, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 100px;
-    transition: all var(--transition-normal);
-    cursor: pointer;
-    backdrop-filter: blur(12px);
-  }
-
-  .hero-btn:hover {
-    border-color: var(--accent-cyan);
-    transform: scale(1.05);
-    box-shadow: 0 0 25px rgba(6, 182, 212, 0.3);
-  }
-
-  /* 3D Crystal Stage */
-  .crystal-stage {
-    position: relative;
-    width: 100%;
-    height: 400px;
+  /* ─── 3D Crystal Background ─── */
+  .crystal-bg {
+    position: absolute;
+    inset: 0;
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 5;
+    pointer-events: none;
+    z-index: 0;
   }
 
   .crystal-wrapper {
     perspective: 1200px;
-    width: 250px;
-    height: 250px;
+    width: 480px;
+    height: 480px;
     display: flex;
     justify-content: center;
     align-items: center;
     transform-style: preserve-3d;
-    animation: crystal-spin 35s linear infinite;
+    animation: crystal-spin 40s linear infinite;
+    opacity: 0.22;
+    position: absolute;
+    right: -40px;
+    top: 50%;
+    transform: translateY(-50%);
+    will-change: transform; /* GPU compositor layer — prevents layout repaints during 3D spin */
   }
 
   @keyframes crystal-spin {
-    0% { transform: rotateY(0deg); }
-    100% { transform: rotateY(360deg); }
+    0%   { transform: translateY(-50%) rotateY(0deg); }
+    100% { transform: translateY(-50%) rotateY(360deg); }
   }
 
   .crystal-container {
-    width: 200px;
-    height: 200px;
+    width: 340px;
+    height: 340px;
     position: relative;
     transform-style: preserve-3d;
-    /* Custom properties set dynamically by JS, default values below */
-    --rx: 0deg;
-    --ry: 0deg;
-    transform: rotateX(calc(20deg + var(--rx))) rotateY(var(--ry));
-    transition: transform 0.15s cubic-bezier(0.25, 0.8, 0.25, 1);
+    transform: rotateX(20deg);
   }
 
-  /* 3D Octahedron Face positioning */
-  /* Top pyramid height ~70.7px, base side 141.4px, angle 35.26deg */
   .crystal-face {
     position: absolute;
-    width: 200px;
-    height: 173.2px;
+    width: 340px;
+    height: 294.4px;
     left: 0;
-    top: 13.4px; /* Centering vertically inside the 200x200 container */
+    top: 22.8px;
     transform-origin: 50% 50%;
     backface-visibility: hidden;
   }
@@ -231,7 +291,7 @@ const schema = {
   .face-svg {
     width: 100%;
     height: 100%;
-    filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.2));
+    filter: drop-shadow(0 0 12px rgba(139, 92, 246, 0.3));
   }
 
   .triangle-poly {
@@ -241,155 +301,458 @@ const schema = {
     stroke-linejoin: round;
   }
 
-  /* Octahedron face coordinates */
-  /* Top 4 faces */
-  .face-top-1 {
-    transform: rotateY(0deg) translateZ(57.7px) rotateX(35.26deg);
-  }
-  .face-top-2 {
-    transform: rotateY(90deg) translateZ(57.7px) rotateX(35.26deg);
-  }
-  .face-top-3 {
-    transform: rotateY(180deg) translateZ(57.7px) rotateX(35.26deg);
-  }
-  .face-top-4 {
-    transform: rotateY(270deg) translateZ(57.7px) rotateX(35.26deg);
-  }
+  /* Octahedron face transforms (side=340px, translateZ = 340*0.2885 = 98.1px) */
+  .face-top-1    { transform: rotateY(0deg)   translateZ(98.1px) rotateX(35.26deg); }
+  .face-top-2    { transform: rotateY(90deg)  translateZ(98.1px) rotateX(35.26deg); }
+  .face-top-3    { transform: rotateY(180deg) translateZ(98.1px) rotateX(35.26deg); }
+  .face-top-4    { transform: rotateY(270deg) translateZ(98.1px) rotateX(35.26deg); }
+  .face-bottom-1 { transform: rotateY(0deg)   translateZ(98.1px) rotateX(-35.26deg) rotateZ(180deg); }
+  .face-bottom-2 { transform: rotateY(90deg)  translateZ(98.1px) rotateX(-35.26deg) rotateZ(180deg); }
+  .face-bottom-3 { transform: rotateY(180deg) translateZ(98.1px) rotateX(-35.26deg) rotateZ(180deg); }
+  .face-bottom-4 { transform: rotateY(270deg) translateZ(98.1px) rotateX(-35.26deg) rotateZ(180deg); }
 
-  /* Bottom 4 faces: rotated upside down (180deg on Z) and tilted down */
-  .face-bottom-1 {
-    transform: rotateY(0deg) translateZ(57.7px) rotateX(-35.26deg) rotateZ(180deg);
-    transform-origin: 50% 50%;
-  }
-  .face-bottom-2 {
-    transform: rotateY(90deg) translateZ(57.7px) rotateX(-35.26deg) rotateZ(180deg);
-    transform-origin: 50% 50%;
-  }
-  .face-bottom-3 {
-    transform: rotateY(180deg) translateZ(57.7px) rotateX(-35.26deg) rotateZ(180deg);
-    transform-origin: 50% 50%;
-  }
-  .face-bottom-4 {
-    transform: rotateY(270deg) translateZ(57.7px) rotateX(-35.26deg) rotateZ(180deg);
-    transform-origin: 50% 50%;
-  }
-
-  .crystal-shadow {
+  .crystal-aura {
     position: absolute;
-    width: 250px;
-    height: 250px;
-    background: radial-gradient(circle, rgba(139, 92, 246, 0.25) 0%, transparent 70%);
-    filter: blur(20px);
-    z-index: -1;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.18) 0%, transparent 65%);
+    filter: blur(40px);
     pointer-events: none;
-    animation: float-slow 8s ease-in-out infinite;
+    animation: float-slow 10s ease-in-out infinite;
   }
 
-  /* Title layout at bottom */
-  .hero-text-content {
-    grid-column: 1 / -1;
-    text-align: center;
-    margin-top: 2rem;
+  /* ─── Hero Content Grid ─── */
+  .hero-content {
+    position: relative;
+    z-index: 10;
+    display: grid;
+    grid-template-columns: 1fr 420px;
+    gap: 3rem;
+    align-items: center;
+    width: 100%;
+  }
+
+  /* ─── Left Column ─── */
+  .hero-left {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
-    z-index: 10;
+    gap: 1.75rem;
   }
 
-  .hero-title {
-    font-family: var(--font-mono);
-    font-size: clamp(1.8rem, 4.5vw, 3.2rem);
+  /* Availability Badge */
+  .availability-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.45rem 1rem;
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    border-radius: 100px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #34d399;
+    width: fit-content;
+    letter-spacing: 0.02em;
+  }
+
+  .badge-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #34d399;
+    box-shadow: 0 0 8px #34d399;
+    animation: badge-pulse 2s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes badge-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.6; transform: scale(0.85); }
+  }
+
+  /* Heading */
+  .hero-heading {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    margin: 0;
+    font-family: var(--font-sans);
+    line-height: 1.1;
+  }
+
+  .greeting {
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+  }
+
+  .name {
+    font-size: clamp(2.8rem, 6vw, 4.8rem);
     font-weight: 800;
-    letter-spacing: 0.05em;
-    background: linear-gradient(135deg, #fff 30%, #a1a1aa 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    margin: 0;
+    color: #fff;
+    letter-spacing: -0.03em;
+    line-height: 1.0;
   }
 
-  .hero-subtitle {
-    font-size: clamp(0.95rem, 1.8vw, 1.25rem);
+  .role-line {
+    font-size: clamp(2.8rem, 6vw, 4.8rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.0;
+  }
+
+  .specialty {
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+  }
+
+  /* Description */
+  .hero-desc {
+    font-size: clamp(0.95rem, 1.5vw, 1.1rem);
     color: var(--text-secondary);
-    letter-spacing: 0.15em;
-    font-weight: 400;
+    line-height: 1.7;
+    max-width: 520px;
     margin: 0;
   }
 
-  /* Responsive styling */
-  @media (max-width: 800px) {
-    .hero-immersive {
-      grid-template-columns: 1fr;
-      grid-template-rows: auto auto auto;
+  /* CTAs */
+  .hero-ctas {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .cta-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.85rem 1.75rem;
+    background: rgba(6, 182, 212, 0.12);
+    border: 1px solid rgba(6, 182, 212, 0.35);
+    border-radius: 100px;
+    color: var(--accent-cyan);
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all var(--transition-normal);
+    letter-spacing: 0.02em;
+  }
+
+  .cta-primary:hover {
+    background: rgba(6, 182, 212, 0.2);
+    border-color: var(--accent-cyan);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(6, 182, 212, 0.25);
+  }
+
+  .cta-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.85rem 1.75rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 100px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all var(--transition-normal);
+    letter-spacing: 0.02em;
+  }
+
+  .cta-secondary:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    transform: translateY(-2px);
+  }
+
+  /* Stats */
+  .hero-stats {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    margin-top: 0.5rem;
+  }
+
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .stat-num {
+    font-size: clamp(1.6rem, 3vw, 2rem);
+    font-weight: 800;
+    color: #fff;
+    font-family: var(--font-mono);
+    line-height: 1;
+  }
+
+  .stat-plus {
+    color: var(--accent-cyan);
+    font-weight: 800;
+  }
+
+  .stat-label {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+    font-weight: 500;
+  }
+
+  .stat-divider {
+    width: 1px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+  }
+
+  /* ─── Right Column — Stack Card ─── */
+  .hero-right {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+  }
+
+  .stack-card {
+    width: 100%;
+    max-width: 400px;
+    padding: 1.75rem;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    box-shadow: 
+      0 20px 60px rgba(0, 0, 0, 0.35),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    transition: box-shadow var(--transition-normal), border-color var(--transition-normal);
+  }
+
+  .stack-card:hover {
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow:
+      0 25px 70px rgba(0, 0, 0, 0.4),
+      0 0 40px rgba(139, 92, 246, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  .stack-card-header {
+    margin-bottom: 1.25rem;
+  }
+
+  .stack-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+
+  .stack-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .stack-col {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .stack-tag {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.65rem 0.9rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    transition: all var(--transition-fast);
+    cursor: default;
+  }
+
+  .stack-tag:hover {
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 255, 255, 0.14);
+    color: #fff;
+    transform: translateX(3px);
+  }
+
+  .stack-tag--cyan  { border-color: rgba(6, 182, 212, 0.2); }
+  .stack-tag--cyan  .stack-dot { background: var(--accent-cyan); box-shadow: 0 0 6px var(--accent-cyan); }
+  .stack-tag--green { border-color: rgba(16, 185, 129, 0.2); }
+  .stack-tag--green .stack-dot { background: #34d399; box-shadow: 0 0 6px #34d399; }
+  .stack-tag--purple { border-color: rgba(139, 92, 246, 0.2); }
+  .stack-tag--purple .stack-dot { background: var(--accent-purple); box-shadow: 0 0 6px var(--accent-purple); }
+  .stack-tag--pink  { border-color: rgba(236, 72, 153, 0.2); }
+  .stack-tag--pink  .stack-dot { background: var(--accent-pink); box-shadow: 0 0 6px var(--accent-pink); }
+
+  .stack-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    flex-shrink: 0;
+    transition: box-shadow var(--transition-fast);
+  }
+
+  /* Card footer */
+  .stack-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 1.25rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .stack-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.83rem;
+    font-weight: 600;
+    color: #34d399;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #34d399;
+    box-shadow: 0 0 8px #34d399;
+    animation: badge-pulse 2s ease-in-out infinite;
+  }
+
+  .stack-location {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+  }
+
+  /* ─── Responsive ─── */
+  @media (max-width: 1024px) {
+    .hero-content {
+      grid-template-columns: 1fr 360px;
       gap: 2rem;
-      min-height: auto;
-      padding-top: 4rem;
-    }
-
-    .left-btn {
-      grid-row: 2;
-    }
-    
-    .right-btn {
-      grid-row: 3;
-    }
-
-    .crystal-stage {
-      height: 300px;
     }
 
     .crystal-wrapper {
-      width: 180px;
-      height: 180px;
+      width: 380px;
+      height: 380px;
+      opacity: 0.18;
     }
 
     .crystal-container {
-      width: 140px;
-      height: 140px;
+      width: 260px;
+      height: 260px;
     }
 
     .crystal-face {
-      width: 140px;
-      height: 121.2px;
-      top: 9.4px;
+      width: 260px;
+      height: 225.3px;
+      top: 17.4px;
     }
 
-    /* Recalculate Z-translation for smaller scale octahedron on mobile */
-    /* side=140px, translateZ = side * 0.2885 = 40.4px */
-    .face-top-1 { transform: rotateY(0deg) translateZ(40.4px) rotateX(35.26deg); }
-    .face-top-2 { transform: rotateY(90deg) translateZ(40.4px) rotateX(35.26deg); }
-    .face-top-3 { transform: rotateY(180deg) translateZ(40.4px) rotateX(35.26deg); }
-    .face-top-4 { transform: rotateY(270deg) translateZ(40.4px) rotateX(35.26deg); }
-    .face-bottom-1 { transform: rotateY(0deg) translateZ(40.4px) rotateX(-35.26deg) rotateZ(180deg); }
-    .face-bottom-2 { transform: rotateY(90deg) translateZ(40.4px) rotateX(-35.26deg) rotateZ(180deg); }
-    .face-bottom-3 { transform: rotateY(180deg) translateZ(40.4px) rotateX(-35.26deg) rotateZ(180deg); }
-    .face-bottom-4 { transform: rotateY(270deg) translateZ(40.4px) rotateX(-35.26deg) rotateZ(180deg); }
+    .face-top-1    { transform: rotateY(0deg)   translateZ(75px) rotateX(35.26deg); }
+    .face-top-2    { transform: rotateY(90deg)  translateZ(75px) rotateX(35.26deg); }
+    .face-top-3    { transform: rotateY(180deg) translateZ(75px) rotateX(35.26deg); }
+    .face-top-4    { transform: rotateY(270deg) translateZ(75px) rotateX(35.26deg); }
+    .face-bottom-1 { transform: rotateY(0deg)   translateZ(75px) rotateX(-35.26deg) rotateZ(180deg); }
+    .face-bottom-2 { transform: rotateY(90deg)  translateZ(75px) rotateX(-35.26deg) rotateZ(180deg); }
+    .face-bottom-3 { transform: rotateY(180deg) translateZ(75px) rotateX(-35.26deg) rotateZ(180deg); }
+    .face-bottom-4 { transform: rotateY(270deg) translateZ(75px) rotateX(-35.26deg) rotateZ(180deg); }
+  }
+
+  @media (max-width: 768px) {
+    .hero-section {
+      padding: 3rem 1.25rem 2.5rem;
+      min-height: auto;
+      align-items: flex-start;
+    }
+
+    .hero-content {
+      grid-template-columns: 1fr;
+      gap: 2.5rem;
+    }
+
+    .hero-right {
+      justify-content: center;
+    }
+
+    .stack-card {
+      max-width: 100%;
+    }
+
+    .crystal-wrapper {
+      width: 280px;
+      height: 280px;
+      opacity: 0.12;
+      right: 50%;
+      transform: translate(50%, -50%);
+    }
+
+    .hero-stats {
+      gap: 1.25rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .hero-ctas {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .cta-primary,
+    .cta-secondary {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .stack-grid {
+      grid-template-columns: 1fr 1fr;
+    }
   }
 </style>
 
 <script>
-  // Mouse tilt tracking for the 3D crystal
-  function setupCrystalTilt() {
-    const container = document.querySelector('.crystal-container') as HTMLElement;
+  // Mouse tilt tracking for the 3D crystal.
+  // Uses only astro:page-load (fires on initial load AND after View Transitions).
+  // Tracks and removes the previous listener before registering a new one to prevent
+  // listener accumulation across client-side navigations.
+  let _tiltHandler: ((e: MouseEvent) => void) | null = null;
 
-    document.addEventListener('mousemove', (e) => {
-      if (!container) return;
-      
-      const width = window.innerWidth;
-      const height = window.innerHeight;
-      
-      // Get normal coords (-1 to 1) from the center of the viewport
-      const dx = (e.clientX - width / 2) / (width / 2);
-      const dy = (e.clientY - height / 2) / (height / 2);
-      
-      // Calculate rotation adjustments (max tilt of 30deg)
-      const rx = -dy * 30; // pitch
-      const ry = dx * 30;  // yaw
-      
-      container.style.setProperty('--rx', `${rx}deg`);
-      container.style.setProperty('--ry', `${ry}deg`);
-    });
+  function setupCrystalTilt() {
+    const container = document.querySelector('.crystal-container') as HTMLElement | null;
+    if (!container) return;
+
+    // Remove previous listener if it exists
+    if (_tiltHandler) {
+      document.removeEventListener('mousemove', _tiltHandler);
+    }
+
+    _tiltHandler = (e: MouseEvent) => {
+      const dx = (e.clientX - window.innerWidth  / 2) / (window.innerWidth  / 2);
+      const dy = (e.clientY - window.innerHeight / 2) / (window.innerHeight / 2);
+      container.style.transform = `rotateX(${20 - dy * 15}deg) rotateY(${dx * 15}deg)`;
+    };
+
+    document.addEventListener('mousemove', _tiltHandler, { passive: true });
   }
 
-  document.addEventListener('DOMContentLoaded', setupCrystalTilt);
+  // astro:page-load fires on both the initial load and after each View Transition.
   document.addEventListener('astro:page-load', setupCrystalTilt);
 </script>
